@@ -2,6 +2,7 @@ name: Windows x64 build
 on:
   workflow_dispatch:
   push:
+    branches: ['main']
     tags: ['v*']
 permissions:
   contents: read
@@ -13,7 +14,7 @@ jobs:
       - name: Validate source
         shell: pwsh
         run: |
-          $required = @('CMakeLists.txt','build-windows.ps1','game.toml','generated/SLUS_012.74_dispatch.c','generated/overlays_static.c','runtime_patches/PATCHED_FILES.txt')
+          $required = @('CMakeLists.txt','build-windows.ps1','game.toml','generated/SLUS_012.74_dispatch.c','generated/overlays_static.c','runtime_patches/PATCHED_FILES.txt','compat/zlib_compat.c','Launch.cmd')
           foreach ($f in $required) { if (!(Test-Path $f)) { throw "Missing required source: $f" } }
           if (!(Get-ChildItem generated/SLUS_012.74_full_*.c)) { throw 'Missing generated C shards' }
       - name: Fetch pinned framework
@@ -38,7 +39,9 @@ jobs:
           if (!$exe) { throw 'Executable missing' }
           New-Item -ItemType Directory dist -Force
           Copy-Item $exe.FullName dist
-          Copy-Item game.toml,Launch_*.cmd dist
+          Copy-Item game.toml,Launch.cmd,Launch_*.cmd dist
+          if (Test-Path build-release/bios) { Copy-Item build-release/bios dist/bios -Recurse }
+          if (Test-Path build-release/assets) { Copy-Item build-release/assets dist/assets -Recurse }
           Compress-Archive -Path dist/* -DestinationPath WCW-Windows-x64.zip
           Get-FileHash WCW-Windows-x64.zip -Algorithm SHA256
       - uses: actions/upload-artifact@v4
