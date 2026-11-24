@@ -1,0 +1,27 @@
+--- a/runtime/src/gpu_gl_renderer.c
++++ b/runtime/src/gpu_gl_renderer.c
+@@ -4430,6 +4430,15 @@
+ /* Letterbox: largest num:den rect centered in the drawable. */
+ static void letterbox_rect_aspect(int ww, int wh, int num, int den,
+                                   int *x, int *y, int *w, int *h) {
++    /* WCW host-only stretch: no guest GTE or CD timing changes. */
++    extern int wcw_display_mode(void);
++    int mode = wcw_display_mode();
++    if (mode == 2) {
++        *x = 0; *y = 0; *w = ww; *h = wh; return;
++    }
++    if (mode == 1) { num = 16; den = 9; }
++    if (mode == 3) { num = 17; den = 9; }
++    if (mode == 4) { num = 21; den = 9; }
+     int dw = ww, dh = (ww * den) / num;
+     if (dh > wh) { dh = wh; dw = (wh * num) / den; }
+     *x = (ww - dw) / 2;
+@@ -7649,6 +7658,8 @@
+         }
+     }
+     SDL_GL_SwapWindow(s_win);
++    extern void wcw_present_count(void);
++    wcw_present_count();
+ }
+ 
+ /* Output pixels per source texel below which a supersampled present switches

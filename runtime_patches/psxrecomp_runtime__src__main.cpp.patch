@@ -1,0 +1,217 @@
+--- a/runtime/src/main.cpp
++++ b/runtime/src/main.cpp
+@@ -543,6 +543,13 @@
+ }
+ static Uint64   s_fps_last_time = 0;
+ static uint64_t s_fps_last_frame = 0;
++static int wcw_mode = 0;
++static const int wcw_width[] = {960,1280,1280,1360,1680,1360,1680,1280};
++static const char *wcw_labels[] = {"4:3","16:9 Stretch","Fill","17:9 Stretch","21:9 Stretch","17:9 Projection","21:9 Projection","16:9 Projection"};
++static bool wcw_projection() { return wcw_mode >= 5; }
++extern "C" int wcw_display_mode(void) { return wcw_mode; }
++static uint64_t wcw_presents = 0, wcw_last_presents = 0;
++extern "C" void wcw_present_count(void) { ++wcw_presents; }
+ static std::string s_fps_base_title;
+ static int      s_fps_telemetry_enabled = -1; /* -1 = unread env */
+ static FramePacer s_frame_pacer = { 0 };
+@@ -600,7 +607,7 @@
+ static int fps_telemetry_enabled(void) {
+     if (s_fps_telemetry_enabled < 0) {
+         const char *e = std::getenv("PSX_FPS_TELEMETRY");
+-        s_fps_telemetry_enabled = (e && e[0] && e[0] != '0') ? 1 : 0;
++        s_fps_telemetry_enabled = (!e || !e[0] || e[0] != '0') ? 1 : 0;
+     }
+     return s_fps_telemetry_enabled;
+ }
+@@ -2002,6 +2009,18 @@
+                      g_ws_hud_sprt ? 1 : 0, mode);
+ }
+ 
++static void wcw_apply_projection() {
++    g_ws_adaptive_view = false;
++    g_ws_native_wide = 0;
++    g_ws_hud_sprt = wcw_projection();
++    g_video_aspect_num = wcw_projection() ? (wcw_mode == 5 ? 17 : wcw_mode == 6 ? 21 : 16) : 4;
++    g_video_aspect_den = wcw_projection() ? 9 : 3;
++    gl_renderer_set_display_aspect(g_video_aspect_num,g_video_aspect_den);
++    vk_renderer_set_display_aspect(g_video_aspect_num,g_video_aspect_den);
++    g_ws_projection_mode = -1;
++    refresh_widescreen_projection();
++}
++
+ /* Follow the host window without feeding its absolute pixel size into guest
+  * rendering. Only the ratio matters: gpu_ws_configure derives the PSX-native
+  * sidecar width from it, just as the fixed 16:9/21:9 modes do. */
+@@ -2298,6 +2317,11 @@
+         g_logical_w = 480 * g_video_aspect_num * tex_scale / g_video_aspect_den;
+         if (g_logical_w < 1) g_logical_w = 640;
+         SDL_RenderSetLogicalSize(sdl_renderer, g_logical_w, 480 * tex_scale);
++#if defined(PSX_SDL3)
++        if (const char *mode = std::getenv("WCW_STRETCH")) {
++            if (!strcmp(mode,"fill") || !strcmp(mode,"16:9")) SDL_SetRenderLogicalPresentation(sdl_renderer, g_logical_w, 480 * tex_scale, SDL_LOGICAL_PRESENTATION_STRETCH);
++        }
++#endif
+     }
+     if (!sdl_texture) {
+         const int tex_scale = netplay_cpu_auth_gpu() ? 1 : g_video_scale;
+@@ -6531,7 +6555,7 @@
+         SDL_RenderClear(sdl_renderer);
+         SDL_RenderCopy(sdl_renderer, sdl_texture, &s_sw_hold_src, &s_sw_hold_dst);
+         host_osd_draw_sdl(sdl_renderer);
+-        SDL_RenderPresent(sdl_renderer);
++        SDL_RenderPresent(sdl_renderer); wcw_present_count();
+         did = 1;
+     }
+ #endif
+@@ -7180,7 +7204,7 @@
+             SDL_RenderCopy(sdl_renderer, sdl_texture, &s_sw_hold_src,
+                            &s_sw_hold_dst);
+         host_osd_draw_sdl(sdl_renderer);
+-        SDL_RenderPresent(sdl_renderer);
++        SDL_RenderPresent(sdl_renderer); wcw_present_count();
+     }
+ #endif
+ }
+@@ -7388,6 +7412,32 @@
+             const SDL_Scancode scancode = ev.key.keysym.scancode;
+             const int key_repeat = ev.key.repeat ? 1 : 0;
+ #endif
++#if defined(_WIN32)
++            if (!key_repeat && key == SDLK_F10 && !psx_netplay_active()) {
++                wchar_t module[32768];
++                if (GetModuleFileNameW(nullptr, module, 32768)) {
++                    const auto options = std::filesystem::path(module).parent_path() / L"AdvancedOptions.exe";
++                    STARTUPINFOW si{}; si.cb = sizeof(si);
++                    PROCESS_INFORMATION pi{};
++                    if (CreateProcessW(options.c_str(), nullptr, nullptr, nullptr, FALSE, 0,
++                                       nullptr, options.parent_path().c_str(), &si, &pi)) {
++                        CloseHandle(pi.hThread); CloseHandle(pi.hProcess);
++                    } else std::fprintf(stderr, "Advanced Options could not be opened: %lu\n", (unsigned long)GetLastError());
++                }
++                continue;
++            }
++#endif
++            if (!key_repeat && key == SDLK_F9 && sdl_window && !psx_netplay_active()) {
++                wcw_mode = (wcw_mode + 1) % 8;
++                if (!g_fullscreen) SDL_SetWindowSize(sdl_window, wcw_width[wcw_mode], 720);
++#if defined(PSX_SDL3)
++                if (sdl_renderer) SDL_SetRenderLogicalPresentation(sdl_renderer, g_logical_w, 480 * g_video_scale, wcw_mode ? SDL_LOGICAL_PRESENTATION_STRETCH : SDL_LOGICAL_PRESENTATION_LETTERBOX);
++#endif
++                wcw_apply_projection();
++                std::fprintf(stderr,"WCW F9 display mode=%d\n",wcw_mode);
++                continue;
++            }
++            if (!key_repeat && key == SDLK_F11) { fps_telemetry_toggle(); continue; }
+             if (key == SDLK_ESCAPE && psx_netplay_active()) {
+                 netplay_soft_exit("netplay_escape");
+                 return false;
+@@ -7428,9 +7478,9 @@
+ #endif
+             }
+             else if (!key_repeat &&
+-                     host_keymap_match_event(HOST_KEYMAP_DISPLAY_PERF,
++                     (key == SDLK_F11 || host_keymap_match_event(HOST_KEYMAP_DISPLAY_PERF,
+                                              (int)key, (int)scancode,
+-                                             (int)mod)) {
++                                             (int)mod))) {
+                 fps_telemetry_toggle();
+             }
+             else if (!key_repeat &&
+@@ -7551,6 +7601,7 @@
+         if (!s_fps_last_time) {
+             s_fps_last_time = now;
+             s_fps_last_frame = s_frame_count;
++            wcw_last_presents = wcw_presents;
+             if (sdl_window && s_fps_base_title.empty()) {
+                 const char *title = SDL_GetWindowTitle(sdl_window);
+                 if (title) s_fps_base_title = title;
+@@ -7559,12 +7610,7 @@
+             const double seconds = (double)(now - s_fps_last_time) / (double)frequency;
+             const double fps = (double)(s_frame_count - s_fps_last_frame) / seconds;
+             const double speed = fps / guest_video_standard_hz();
+-            double display_fps = 0.0;
+-            if (g_frame_interpolation && g_gl_active) {
+-                display_fps = g_frame_interpolation_fps > 0
+-                    ? (double)g_frame_interpolation_fps
+-                    : g_host_refresh_hz;
+-            }
++            double display_fps = (wcw_presents - wcw_last_presents) / seconds;
+             if (!g_headless && sdl_window) {
+                 char title[256];
+                 if (display_fps > 0.0) {
+@@ -7581,12 +7627,16 @@
+                 char osd[96];
+                 if (display_fps > 0.0) {
+                     snprintf(osd, sizeof(osd),
+-                             "Game %.0f FPS  %.2fx | Display %.0f FPS",
++                             "VBlank %.0f Hz %.2fx | Render %.1f FPS",
+                              fps, speed, display_fps);
+                 } else {
+-                    snprintf(osd, sizeof(osd), "Game %.0f FPS  %.2fx",
++                    snprintf(osd, sizeof(osd), "VBlank %.0f Hz %.2fx",
+                              fps, speed);
+                 }
++                int ww=0,wh=0;
++                if (sdl_window) SDL_GetWindowSize(sdl_window,&ww,&wh);
++                size_t n = strlen(osd);
++                snprintf(osd+n,sizeof(osd)-n," | %dx%d %s",ww,wh,wcw_labels[wcw_mode]);
+                 host_osd_set_status(osd);
+             }
+             if (netplay_timing_on() && s_np_timing_frames > 0) {
+@@ -7625,6 +7675,7 @@
+             std::fflush(stderr);
+             s_fps_last_time = now;
+             s_fps_last_frame = s_frame_count;
++            wcw_last_presents = wcw_presents;
+         }
+     }
+ 
+@@ -8132,7 +8183,7 @@
+                         SDL_SetRenderDrawColor(sdl_renderer, 0, 0, 0, 255);
+                         SDL_RenderClear(sdl_renderer);
+                         host_osd_draw_sdl(sdl_renderer);
+-                        SDL_RenderPresent(sdl_renderer);
++                        SDL_RenderPresent(sdl_renderer); wcw_present_count();
+                     }
+                 }
+             }
+@@ -8586,7 +8637,7 @@
+     {
+         latency_ring_mark(LAT_SWAP_BEGIN);
+         const Uint64 t0 = SDL_GetPerformanceCounter();
+-        SDL_RenderPresent(sdl_renderer);
++        SDL_RenderPresent(sdl_renderer); wcw_present_count();
+         const Uint64 t1 = SDL_GetPerformanceCounter();
+         latency_ring_mark(LAT_SWAP_END);
+         netplay_note_present();
+@@ -17371,7 +17422,17 @@
+      * widescreen hack); the present path letterboxes to the same aspect, so
+      * the image scales to fill the larger window with no further distortion. */
+     int game_w = g_video_win_w, game_h = 0;
+-    clamp_window_aspect(&game_w, &game_h, g_video_aspect_num, g_video_aspect_den);
++    const char *wcw_stretch = std::getenv("WCW_STRETCH");
++    wcw_mode = wcw_stretch && !strcmp(wcw_stretch,"fill") ? 2 : wcw_stretch && !strcmp(wcw_stretch,"16:9") ? 1 : 0;
++    if (wcw_stretch) {
++        if (!strcmp(wcw_stretch,"17:9")) wcw_mode=3;
++        if (!strcmp(wcw_stretch,"21:9")) wcw_mode=4;
++        if (!strcmp(wcw_stretch,"17:9p")) wcw_mode=5;
++        if (!strcmp(wcw_stretch,"21:9p")) wcw_mode=6;
++        if (!strcmp(wcw_stretch,"16:9p")) wcw_mode=7;
++    }
++    wcw_apply_projection();
++    game_w = wcw_width[wcw_mode]; game_h = 720;
+     sdl_window = SDL_CreateWindow(
+         window_title.c_str(),
+         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+@@ -17551,6 +17612,11 @@
+         const int tex_scale = netplay_cpu_auth_gpu() ? 1 : g_video_scale;
+         g_logical_w = 480 * g_video_aspect_num * tex_scale / g_video_aspect_den;
+         SDL_RenderSetLogicalSize(sdl_renderer, g_logical_w, 480 * tex_scale);
++#if defined(PSX_SDL3)
++        if (const char *mode = std::getenv("WCW_STRETCH")) {
++            if (!strcmp(mode,"fill") || !strcmp(mode,"16:9")) SDL_SetRenderLogicalPresentation(sdl_renderer, g_logical_w, 480 * tex_scale, SDL_LOGICAL_PRESENTATION_STRETCH);
++        }
++#endif
+     }
+   }
+ 

@@ -1,0 +1,7 @@
+--- a/recompiler/lib/toml11/toml/comments.hpp
++++ b/recompiler/lib/toml11/toml/comments.hpp
+@@ -1,3 +1,4 @@
++#include <exception>
+ //     Copyright Toru Niina 2019.
+ // Distributed under the MIT License.
+ #ifndef TOML11_COMMENTS_HPP

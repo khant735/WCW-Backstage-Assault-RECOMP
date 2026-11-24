@@ -1,0 +1,41 @@
+{
+  "entry": "0x80013688",
+  "banks": [
+    {
+      "bank": "MAIN",
+      "file": "SLUS_012.74",
+      "base": "0x80010000",
+      "size": 1067008,
+      "sha256": "e8fd88d8a60cd879e9ff3c0a6625dc9313c18ff934574df10e17b9dd45be6af1",
+      "seeds": 937
+    },
+    {
+      "bank": "GAME",
+      "file": "GAME.OVR",
+      "base": "0x800b1b20",
+      "size": 403052,
+      "sha256": "7b934b6e2f7b92691879c7f46e6a8b5ef1f3633ca871c28b35ace0820a243d25",
+      "seeds": 339
+    },
+    {
+      "bank": "FLUFF",
+      "file": "FLUFF.OVR",
+      "base": "0x800b1b20",
+      "size": 400552,
+      "sha256": "cd6406052aab017f1d5ee3b3b980809d8c2a56f71f5e39b095cd22a4c2d434fd",
+      "seeds": 355
+    }
+  ],
+  "jump_table": {
+    "2": "0x80065494",
+    "3": "0x80065698",
+    "4": "0x800656dc",
+    "5": "0x80065744",
+    "6": "0x80065768",
+    "7": "0x80065780",
+    "8": "0x80065494",
+    "9": "0x80065780",
+    "10": "0x80065780"
+  },
+  "schema": "local research manifest, not PSXRecomp config"
+}

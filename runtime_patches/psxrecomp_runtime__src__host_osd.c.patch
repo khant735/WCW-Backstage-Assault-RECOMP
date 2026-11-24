@@ -1,0 +1,14 @@
+--- a/runtime/src/host_osd.c
++++ b/runtime/src/host_osd.c
+@@ -11,11 +11,7 @@
+ #include <stdio.h>
+ #include <string.h>
+ 
+-#if defined(RECOMP_LAUNCHER)
+ #define HOST_OSD_VISUAL 1
+-#else
+-#define HOST_OSD_VISUAL 0
+-#endif
+ 
+ #define OSD_MAX_CHARS  64
+ #define OSD_PAD_X      2
