@@ -1,0 +1,43 @@
+# Game media, licensed original assets and BIOS files (never commit)
+*.bin
+*.cue
+*.iso
+*.img
+*.ccd
+*.sub
+*.chd
+*.ecm
+*.pbp
+*.xa
+*.big
+*.ovr
+*.ps-exe
+*.exe
+*.dll
+*.o
+*.obj
+*.a
+*.lib
+*.pdb
+*.zip
+*.7z
+*.rar
+*.xz
+*.tar.gz
+# Build caches and third-party fetched source trees
+build/
+build-*/
+winbuild/
+psxrecomp/
+psxrecomp-*/
+SDL3-*/
+llvm-mingw-*/
+.cache/
+*.log
+!docs/Stage15B3_build.log
+# Runtime files
+saves/
+disc/
+bios/
+settings.toml
+boot.log
