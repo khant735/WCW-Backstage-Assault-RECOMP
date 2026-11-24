@@ -1,0 +1,48 @@
+name: Windows x64 build
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate source
+        shell: pwsh
+        run: |
+          $required = @('CMakeLists.txt','build-windows.ps1','game.toml','generated/SLUS_012.74_dispatch.c','generated/overlays_static.c','runtime_patches/PATCHED_FILES.txt')
+          foreach ($f in $required) { if (!(Test-Path $f)) { throw "Missing required source: $f" } }
+          if (!(Get-ChildItem generated/SLUS_012.74_full_*.c)) { throw 'Missing generated C shards' }
+      - name: Fetch pinned framework
+        shell: pwsh
+        run: |
+          git clone https://github.com/mstan/psxrecomp.git psxrecomp
+          git -C psxrecomp checkout 8077e71098ce0347d7d41d267630bc856816cf77
+          git -C psxrecomp submodule update --init --recursive
+          foreach ($p in Get-ChildItem runtime_patches/*.patch) {
+            git -C psxrecomp apply --check $p.FullName
+            if ($LASTEXITCODE -ne 0) { throw "Patch check failed: $p" }
+            git -C psxrecomp apply $p.FullName
+            if ($LASTEXITCODE -ne 0) { throw "Patch failed: $p" }
+          }
+      - name: Compile
+        shell: pwsh
+        run: ./build-windows.ps1
+      - name: Package
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem build-release -Recurse -Filter WCWBackstageAssault_Recompiled.exe | Select-Object -First 1
+          if (!$exe) { throw 'Executable missing' }
+          New-Item -ItemType Directory dist -Force
+          Copy-Item $exe.FullName dist
+          Copy-Item game.toml,Launch_*.cmd dist
+          Compress-Archive -Path dist/* -DestinationPath WCW-Windows-x64.zip
+          Get-FileHash WCW-Windows-x64.zip -Algorithm SHA256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WCW-Windows-x64
+          path: WCW-Windows-x64.zip
+          if-no-files-found: error
