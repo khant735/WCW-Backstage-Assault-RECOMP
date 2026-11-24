@@ -20,3 +20,12 @@ psxrecomp_add_game_runtime(psx-runtime
  GAME_OVERLAY_STATIC_C "${CMAKE_CURRENT_SOURCE_DIR}/generated/overlays_static.c"
  GEN_MARKER "generated/SLUS_012.74_dispatch.c"
  GEN_FULL_GLOB "generated/SLUS_012.74_full_*.c")
+
+# The pinned framework compiles miniz through libchdr, but boot_state.c
+# references three zlib ABI names. Export the compatible entry points.
+if(NOT TARGET miniz)
+  message(FATAL_ERROR "Expected vendored miniz target from psx_libchdr")
+endif()
+target_sources(psx-runtime PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/compat/zlib_compat.c")
+target_include_directories(psx-runtime PRIVATE "${FETCHCONTENT_SOURCE_DIR_PSX_LIBCHDR}/deps/miniz-3.1.1")
+target_link_libraries(psx-runtime PRIVATE miniz)
