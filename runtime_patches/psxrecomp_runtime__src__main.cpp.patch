@@ -1,6 +1,6 @@
 --- a/runtime/src/main.cpp
 +++ b/runtime/src/main.cpp
-@@ -543,6 +543,46 @@
+@@ -543,6 +543,80 @@
  }
  static Uint64   s_fps_last_time = 0;
  static uint64_t s_fps_last_frame = 0;
@@ -16,26 +16,60 @@
 +}
 +static void wcw_advanced_options() {
 +    wcw_load_unlock();
-+    const SDL_MessageBoxButtonData buttons[] = {
-+        {SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 0, "Cancel"},
-+        {0, 1, "Unlock Everything: ON"},
-+        {0, 2, "Unlock Everything: OFF"}
++    struct Entry { const char* name; const char* combo; const char* code; uint32_t addr, mask; int kind; };
++    static const Entry entries[] = {
++        {"Hidden Rewards (candidate)", "R1 L1 R1 L1 Circle Circle", "No safe standalone code", 0x800934da, 0x44, 2},
++        {"Low Gravity", "R1 L1 L1 L1 Square Triangle", "30095EB8 0001", 0x80095eb8, 1, 0},
++        {"Hidden Grunts", "R1 L1 R1 L1 Triangle Triangle", "30095EB7 0010", 0x80095eb4, 0x10000000, 0},
++        {"Tiny Mode", "R1 R1 L1 L1 Square Square", "30095EB7 0020", 0x80095eb4, 0x20000000, 0},
++        {"Large Women", "R1 R1 Triangle Triangle L1 L1", "30095EB7 0040", 0x80095eb4, 0x40000000, 0},
++        {"Indestructible Weapons", "L1 R1 L1 R1 Square Square", "30095EB7 0080", 0x80095eb4, 0x80000000, 0},
++        {"Infinite Stamina", "R1 R1 Triangle R1 R1 Triangle", "300A4AA4 0001", 0x800a4aa4, 1, 1},
++        {"Undocumented 1 (blocked)", "R1 R1 Triangle R2 R2 Triangle", "Unverified", 0, 0, 4},
++        {"Undocumented 2 (blocked)", "R2 R2 Square R2 R2 Square", "Unknown", 0, 0, 4},
++        {"Undocumented 3 (restore resource)", "R1 R1 R1 R1 Circle Circle", "30095E33 0096", 0x80095e33, 0, 3},
++        {"Unlock Everything", "No verified native combo", "50000F02 0000\n800934C8 0000", 0, 0, 5}
 +    };
-+    SDL_MessageBoxData data{};
-+    data.flags = SDL_MESSAGEBOX_INFORMATION;
-+    data.title = "WCW Advanced Options";
-+    data.message = wcw_unlock ? "Unlock Everything is ON. Changes may persist in saved games." : "Unlock Everything is OFF. Enabling may permanently unlock content in saved games.";
-+    data.numbuttons = 3;
-+    data.buttons = buttons;
-+    int selected = 0;
-+    SDL_ShowMessageBox(&data, &selected);
-+    if (selected != 1 && selected != 2) return;
-+    wcw_unlock = selected == 1;
-+    wcw_unlock_logged = false;
-+    if (FILE *fp = std::fopen("wcw-unlock.ini", "w")) {
-+        std::fputs(wcw_unlock ? "1\n" : "0\n", fp);
-+        std::fclose(fp);
-+    } else std::fprintf(stderr, "WCW: unable to save unlock setting\n");
++    auto write8 = [](uint32_t a, uint8_t v) {
++        unsigned shift = (a & 1u) * 8u;
++        uint32_t h = a & ~1u;
++        psx_host_write_half(h, (psx_read_half(h) & ~(255u << shift)) | (uint32_t(v) << shift));
++    };
++    for (;;) {
++        SDL_MessageBoxButtonData buttons[12]{};
++        std::string labels[11];
++        for (int i=0;i<11;++i) {
++            const auto& e=entries[i]; labels[i]=e.name;
++            if(e.kind==0 || e.kind==1 || e.kind==5) {
++                bool on=e.kind==5?wcw_unlock:e.kind==1?(psx_read_byte(e.addr)&e.mask)!=0:(psx_read_word(e.addr)&e.mask)!=0;
++                labels[i]+=on?" [ON]":" [OFF]";
++            }
++            buttons[i]={0,i,labels[i].c_str()};
++        }
++        buttons[11]={SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT,-1,"Close"};
++        SDL_MessageBoxData d{};
++        d.flags=SDL_MESSAGEBOX_INFORMATION; d.title="WCW Advanced Options - Cheats";
++        d.message="Select a cheat. Changes may affect saved games."; d.numbuttons=12; d.buttons=buttons;
++        int id=-1; SDL_ShowMessageBox(&d,&id);
++        if(id<0 || id>=11)return;
++        const auto& e=entries[id];
++        std::string msg=std::string("Original combination: ")+e.combo+"\nGameShark: "+e.code+"\nDerived codes are untested and may overwrite other flags. Disable is a PC-port feature unless the original toggles.";
++        SDL_MessageBoxButtonData actions[4]{}; int n=0;
++        actions[n++]={SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT,3,"Back"};
++        if(e.kind!=4 && e.kind!=2)actions[n++]={0,0,"Copy code"};
++        if(e.kind!=4)actions[n++]={0,1,(e.kind==2||e.kind==3)?"Activate":"Enable"};
++        if(e.kind==0||e.kind==1||e.kind==5)actions[n++]={0,2,"Disable"};
++        d.title=e.name; d.message=msg.c_str(); d.numbuttons=n; d.buttons=actions;
++        int action=-1; SDL_ShowMessageBox(&d,&action);
++        if(action==0){SDL_SetClipboardText(e.code);continue;}
++        if(action!=1 && action!=2)continue;
++        bool on=action==1;
++        if(e.kind==0){uint32_t v=psx_read_word(e.addr);v=on?v|e.mask:v&~e.mask;psx_host_write_half(e.addr,v);psx_host_write_half(e.addr+2,v>>16);}
++        else if(e.kind==1)write8(e.addr,on?1:0);
++        else if(e.kind==2 && on)write8(e.addr,psx_read_byte(e.addr)&0xbb);
++        else if(e.kind==3 && on && psx_read_byte(e.addr)<150)write8(e.addr,150);
++        else if(e.kind==5){wcw_unlock=on;wcw_unlock_logged=false;if(FILE* f=std::fopen("wcw-unlock.ini","w")){std::fputs(on?"1\n":"0\n",f);std::fclose(f);}}
++    }
 +}
 +static int wcw_mode = 0;
 +static const int wcw_width[] = {960,1280,1280,1360,1680,1360,1680,1280};
@@ -47,7 +81,7 @@
  static std::string s_fps_base_title;
  static int      s_fps_telemetry_enabled = -1; /* -1 = unread env */
  static FramePacer s_frame_pacer = { 0 };
-@@ -600,7 +640,7 @@
+@@ -600,7 +674,7 @@
  static int fps_telemetry_enabled(void) {
      if (s_fps_telemetry_enabled < 0) {
          const char *e = std::getenv("PSX_FPS_TELEMETRY");
@@ -56,7 +90,7 @@
      }
      return s_fps_telemetry_enabled;
  }
-@@ -2002,6 +2042,18 @@
+@@ -2002,6 +2076,18 @@
                       g_ws_hud_sprt ? 1 : 0, mode);
  }
  
@@ -75,7 +109,7 @@
  /* Follow the host window without feeding its absolute pixel size into guest
   * rendering. Only the ratio matters: gpu_ws_configure derives the PSX-native
   * sidecar width from it, just as the fixed 16:9/21:9 modes do. */
-@@ -2298,6 +2350,11 @@
+@@ -2298,6 +2384,11 @@
          g_logical_w = 480 * g_video_aspect_num * tex_scale / g_video_aspect_den;
          if (g_logical_w < 1) g_logical_w = 640;
          SDL_RenderSetLogicalSize(sdl_renderer, g_logical_w, 480 * tex_scale);
@@ -87,7 +121,7 @@
      }
      if (!sdl_texture) {
          const int tex_scale = netplay_cpu_auth_gpu() ? 1 : g_video_scale;
-@@ -6531,7 +6588,7 @@
+@@ -6531,7 +6622,7 @@
          SDL_RenderClear(sdl_renderer);
          SDL_RenderCopy(sdl_renderer, sdl_texture, &s_sw_hold_src, &s_sw_hold_dst);
          host_osd_draw_sdl(sdl_renderer);
@@ -96,7 +130,7 @@
          did = 1;
      }
  #endif
-@@ -7180,7 +7237,7 @@
+@@ -7180,7 +7271,7 @@
              SDL_RenderCopy(sdl_renderer, sdl_texture, &s_sw_hold_src,
                             &s_sw_hold_dst);
          host_osd_draw_sdl(sdl_renderer);
@@ -105,7 +139,7 @@
      }
  #endif
  }
-@@ -7388,6 +7445,21 @@
+@@ -7388,6 +7479,21 @@
              const SDL_Scancode scancode = ev.key.keysym.scancode;
              const int key_repeat = ev.key.repeat ? 1 : 0;
  #endif
@@ -127,7 +161,7 @@
              if (key == SDLK_ESCAPE && psx_netplay_active()) {
                  netplay_soft_exit("netplay_escape");
                  return false;
-@@ -7428,9 +7500,9 @@
+@@ -7428,9 +7534,9 @@
  #endif
              }
              else if (!key_repeat &&
@@ -139,7 +173,7 @@
                  fps_telemetry_toggle();
              }
              else if (!key_repeat &&
-@@ -7532,6 +7604,20 @@
+@@ -7532,6 +7638,20 @@
  #endif
  
 +    wcw_load_unlock();
@@ -160,7 +194,7 @@
      {
          /* Outside every debug guard on purpose: production must be measurable. */
          extern uint64_t s_frame_count;
-@@ -7551,6 +7637,7 @@
+@@ -7551,6 +7671,7 @@
          if (!s_fps_last_time) {
              s_fps_last_time = now;
              s_fps_last_frame = s_frame_count;
@@ -168,7 +202,7 @@
              if (sdl_window && s_fps_base_title.empty()) {
                  const char *title = SDL_GetWindowTitle(sdl_window);
                  if (title) s_fps_base_title = title;
-@@ -7559,12 +7646,7 @@
+@@ -7559,12 +7680,7 @@
              const double seconds = (double)(now - s_fps_last_time) / (double)frequency;
              const double fps = (double)(s_frame_count - s_fps_last_frame) / seconds;
              const double speed = fps / guest_video_standard_hz();
@@ -182,7 +216,7 @@
              if (!g_headless && sdl_window) {
                  char title[256];
                  if (display_fps > 0.0) {
-@@ -7581,12 +7663,16 @@
+@@ -7581,12 +7697,16 @@
                  char osd[96];
                  if (display_fps > 0.0) {
                      snprintf(osd, sizeof(osd),
@@ -201,7 +235,7 @@
                  host_osd_set_status(osd);
              }
              if (netplay_timing_on() && s_np_timing_frames > 0) {
-@@ -7625,6 +7711,7 @@
+@@ -7625,6 +7745,7 @@
              std::fflush(stderr);
              s_fps_last_time = now;
              s_fps_last_frame = s_frame_count;
@@ -209,7 +243,7 @@
          }
      }
  
-@@ -8132,7 +8219,7 @@
+@@ -8132,7 +8253,7 @@
                          SDL_SetRenderDrawColor(sdl_renderer, 0, 0, 0, 255);
                          SDL_RenderClear(sdl_renderer);
                          host_osd_draw_sdl(sdl_renderer);
@@ -218,7 +252,7 @@
                      }
                  }
              }
-@@ -8586,7 +8673,7 @@
+@@ -8586,7 +8707,7 @@
      {
          latency_ring_mark(LAT_SWAP_BEGIN);
          const Uint64 t0 = SDL_GetPerformanceCounter();
@@ -227,7 +261,7 @@
          const Uint64 t1 = SDL_GetPerformanceCounter();
          latency_ring_mark(LAT_SWAP_END);
          netplay_note_present();
-@@ -17371,7 +17458,17 @@
+@@ -17371,7 +17492,17 @@
       * widescreen hack); the present path letterboxes to the same aspect, so
       * the image scales to fill the larger window with no further distortion. */
      int game_w = g_video_win_w, game_h = 0;
@@ -246,7 +280,7 @@
      sdl_window = SDL_CreateWindow(
          window_title.c_str(),
          SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-@@ -17551,6 +17648,11 @@
+@@ -17551,6 +17682,11 @@
          const int tex_scale = netplay_cpu_auth_gpu() ? 1 : g_video_scale;
          g_logical_w = 480 * g_video_aspect_num * tex_scale / g_video_aspect_den;
          SDL_RenderSetLogicalSize(sdl_renderer, g_logical_w, 480 * tex_scale);
