@@ -1,9 +1,42 @@
 --- a/runtime/src/main.cpp
 +++ b/runtime/src/main.cpp
-@@ -543,6 +543,13 @@
+@@ -543,6 +543,46 @@
  }
  static Uint64   s_fps_last_time = 0;
  static uint64_t s_fps_last_frame = 0;
++extern "C" void psx_host_write_half(uint32_t addr, uint16_t val);
++static bool wcw_unlock_loaded = false, wcw_unlock = false, wcw_unlock_logged = false;
++static void wcw_load_unlock() {
++    if (wcw_unlock_loaded) return;
++    wcw_unlock_loaded = true;
++    if (FILE *fp = std::fopen("wcw-unlock.ini", "r")) {
++        wcw_unlock = std::fgetc(fp) == '1';
++        std::fclose(fp);
++    }
++}
++static void wcw_advanced_options() {
++    wcw_load_unlock();
++    const SDL_MessageBoxButtonData buttons[] = {
++        {SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 0, "Cancel"},
++        {0, 1, "Unlock Everything: ON"},
++        {0, 2, "Unlock Everything: OFF"}
++    };
++    SDL_MessageBoxData data{};
++    data.flags = SDL_MESSAGEBOX_INFORMATION;
++    data.title = "WCW Advanced Options";
++    data.message = wcw_unlock ? "Unlock Everything is ON. Changes may persist in saved games." : "Unlock Everything is OFF. Enabling may permanently unlock content in saved games.";
++    data.numbuttons = 3;
++    data.buttons = buttons;
++    int selected = 0;
++    SDL_ShowMessageBox(&data, &selected);
++    if (selected != 1 && selected != 2) return;
++    wcw_unlock = selected == 1;
++    wcw_unlock_logged = false;
++    if (FILE *fp = std::fopen("wcw-unlock.ini", "w")) {
++        std::fputs(wcw_unlock ? "1\n" : "0\n", fp);
++        std::fclose(fp);
++    } else std::fprintf(stderr, "WCW: unable to save unlock setting\n");
++}
 +static int wcw_mode = 0;
 +static const int wcw_width[] = {960,1280,1280,1360,1680,1360,1680,1280};
 +static const char *wcw_labels[] = {"4:3","16:9 Stretch","Fill","17:9 Stretch","21:9 Stretch","17:9 Projection","21:9 Projection","16:9 Projection"};
@@ -14,7 +47,7 @@
  static std::string s_fps_base_title;
  static int      s_fps_telemetry_enabled = -1; /* -1 = unread env */
  static FramePacer s_frame_pacer = { 0 };
-@@ -600,7 +607,7 @@
+@@ -600,7 +640,7 @@
  static int fps_telemetry_enabled(void) {
      if (s_fps_telemetry_enabled < 0) {
          const char *e = std::getenv("PSX_FPS_TELEMETRY");
@@ -23,7 +56,7 @@
      }
      return s_fps_telemetry_enabled;
  }
-@@ -2002,6 +2009,18 @@
+@@ -2002,6 +2042,18 @@
                       g_ws_hud_sprt ? 1 : 0, mode);
  }
  
@@ -42,7 +75,7 @@
  /* Follow the host window without feeding its absolute pixel size into guest
   * rendering. Only the ratio matters: gpu_ws_configure derives the PSX-native
   * sidecar width from it, just as the fixed 16:9/21:9 modes do. */
-@@ -2298,6 +2317,11 @@
+@@ -2298,6 +2350,11 @@
          g_logical_w = 480 * g_video_aspect_num * tex_scale / g_video_aspect_den;
          if (g_logical_w < 1) g_logical_w = 640;
          SDL_RenderSetLogicalSize(sdl_renderer, g_logical_w, 480 * tex_scale);
@@ -54,7 +87,7 @@
      }
      if (!sdl_texture) {
          const int tex_scale = netplay_cpu_auth_gpu() ? 1 : g_video_scale;
-@@ -6531,7 +6555,7 @@
+@@ -6531,7 +6588,7 @@
          SDL_RenderClear(sdl_renderer);
          SDL_RenderCopy(sdl_renderer, sdl_texture, &s_sw_hold_src, &s_sw_hold_dst);
          host_osd_draw_sdl(sdl_renderer);
@@ -63,7 +96,7 @@
          did = 1;
      }
  #endif
-@@ -7180,7 +7204,7 @@
+@@ -7180,7 +7237,7 @@
              SDL_RenderCopy(sdl_renderer, sdl_texture, &s_sw_hold_src,
                             &s_sw_hold_dst);
          host_osd_draw_sdl(sdl_renderer);
@@ -72,25 +105,14 @@
      }
  #endif
  }
-@@ -7388,6 +7412,32 @@
+@@ -7388,6 +7445,21 @@
              const SDL_Scancode scancode = ev.key.keysym.scancode;
              const int key_repeat = ev.key.repeat ? 1 : 0;
  #endif
-+#if defined(_WIN32)
 +            if (!key_repeat && key == SDLK_F10 && !psx_netplay_active()) {
-+                wchar_t module[32768];
-+                if (GetModuleFileNameW(nullptr, module, 32768)) {
-+                    const auto options = std::filesystem::path(module).parent_path() / L"AdvancedOptions.exe";
-+                    STARTUPINFOW si{}; si.cb = sizeof(si);
-+                    PROCESS_INFORMATION pi{};
-+                    if (CreateProcessW(options.c_str(), nullptr, nullptr, nullptr, FALSE, 0,
-+                                       nullptr, options.parent_path().c_str(), &si, &pi)) {
-+                        CloseHandle(pi.hThread); CloseHandle(pi.hProcess);
-+                    } else std::fprintf(stderr, "Advanced Options could not be opened: %lu\n", (unsigned long)GetLastError());
-+                }
++                wcw_advanced_options();
 +                continue;
 +            }
-+#endif
 +            if (!key_repeat && key == SDLK_F9 && sdl_window && !psx_netplay_active()) {
 +                wcw_mode = (wcw_mode + 1) % 8;
 +                if (!g_fullscreen) SDL_SetWindowSize(sdl_window, wcw_width[wcw_mode], 720);
@@ -105,7 +127,7 @@
              if (key == SDLK_ESCAPE && psx_netplay_active()) {
                  netplay_soft_exit("netplay_escape");
                  return false;
-@@ -7428,9 +7478,9 @@
+@@ -7428,9 +7500,9 @@
  #endif
              }
              else if (!key_repeat &&
@@ -117,7 +139,28 @@
                  fps_telemetry_toggle();
              }
              else if (!key_repeat &&
-@@ -7551,6 +7601,7 @@
+@@ -7532,6 +7604,20 @@
+ #endif
+ 
++    wcw_load_unlock();
++    if (wcw_unlock && !psx_netplay_active()) {
++        for (uint32_t i = 0; i < 15; ++i) {
++            const uint32_t addr = 0x800934C8u + 2u * i;
++            const uint16_t before = wcw_unlock_logged ? 0 : psx_read_half(addr);
++            psx_host_write_half(addr, 0);
++            if (!wcw_unlock_logged)
++                std::fprintf(stderr, "WCW unlock %08x: %04x -> %04x\n",
++                             (unsigned)addr, (unsigned)before,
++                             (unsigned)psx_read_half(addr));
++        }
++        wcw_unlock_logged = true;
++    }
++
+     psx_local_mouse_begin(sdl_window, local_mouse_live(override));
+     {
+         /* Outside every debug guard on purpose: production must be measurable. */
+         extern uint64_t s_frame_count;
+@@ -7551,6 +7637,7 @@
          if (!s_fps_last_time) {
              s_fps_last_time = now;
              s_fps_last_frame = s_frame_count;
@@ -125,7 +168,7 @@
              if (sdl_window && s_fps_base_title.empty()) {
                  const char *title = SDL_GetWindowTitle(sdl_window);
                  if (title) s_fps_base_title = title;
-@@ -7559,12 +7610,7 @@
+@@ -7559,12 +7646,7 @@
              const double seconds = (double)(now - s_fps_last_time) / (double)frequency;
              const double fps = (double)(s_frame_count - s_fps_last_frame) / seconds;
              const double speed = fps / guest_video_standard_hz();
@@ -139,7 +182,7 @@
              if (!g_headless && sdl_window) {
                  char title[256];
                  if (display_fps > 0.0) {
-@@ -7581,12 +7627,16 @@
+@@ -7581,12 +7663,16 @@
                  char osd[96];
                  if (display_fps > 0.0) {
                      snprintf(osd, sizeof(osd),
@@ -158,7 +201,7 @@
                  host_osd_set_status(osd);
              }
              if (netplay_timing_on() && s_np_timing_frames > 0) {
-@@ -7625,6 +7675,7 @@
+@@ -7625,6 +7711,7 @@
              std::fflush(stderr);
              s_fps_last_time = now;
              s_fps_last_frame = s_frame_count;
@@ -166,7 +209,7 @@
          }
      }
  
-@@ -8132,7 +8183,7 @@
+@@ -8132,7 +8219,7 @@
                          SDL_SetRenderDrawColor(sdl_renderer, 0, 0, 0, 255);
                          SDL_RenderClear(sdl_renderer);
                          host_osd_draw_sdl(sdl_renderer);
@@ -175,7 +218,7 @@
                      }
                  }
              }
-@@ -8586,7 +8637,7 @@
+@@ -8586,7 +8673,7 @@
      {
          latency_ring_mark(LAT_SWAP_BEGIN);
          const Uint64 t0 = SDL_GetPerformanceCounter();
@@ -184,7 +227,7 @@
          const Uint64 t1 = SDL_GetPerformanceCounter();
          latency_ring_mark(LAT_SWAP_END);
          netplay_note_present();
-@@ -17371,7 +17422,17 @@
+@@ -17371,7 +17458,17 @@
       * widescreen hack); the present path letterboxes to the same aspect, so
       * the image scales to fill the larger window with no further distortion. */
      int game_w = g_video_win_w, game_h = 0;
@@ -203,7 +246,7 @@
      sdl_window = SDL_CreateWindow(
          window_title.c_str(),
          SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-@@ -17551,6 +17612,11 @@
+@@ -17551,6 +17648,11 @@
          const int tex_scale = netplay_cpu_auth_gpu() ? 1 : g_video_scale;
          g_logical_w = 480 * g_video_aspect_num * tex_scale / g_video_aspect_den;
          SDL_RenderSetLogicalSize(sdl_renderer, g_logical_w, 480 * tex_scale);
