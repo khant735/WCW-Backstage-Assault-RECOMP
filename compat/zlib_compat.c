@@ -1,8 +1,9 @@
 /*
- * zlib entry points required by psxrecomp/runtime/src/boot_state.c.
- * The pinned framework builds miniz (through libchdr), which exposes mz_*.
- * Forward the three used symbols without introducing a second compressor.
+ * Export the zlib ABI names referenced by boot_state.c using vendored miniz.
+ * miniz.h defines these names as static inline helpers unless compatibility
+ * names are disabled. Disable those names in this translation unit only.
  */
+#define MINIZ_NO_ZLIB_COMPATIBLE_NAMES
 #include "miniz.h"
 
 int uncompress(unsigned char *dest, unsigned long *dest_len,
