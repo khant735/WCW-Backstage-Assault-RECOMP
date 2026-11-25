@@ -1,6 +1,15 @@
 name: Windows x64 build
 on:
   workflow_dispatch:
+    inputs:
+      publish_release:
+        description: Publish a GitHub pre-release
+        type: boolean
+        default: false
+      version:
+        description: Release tag (e.g. v0.15B.3)
+        type: string
+        default: v0.15B.3
   push:
     branches: ['main']
     tags: ['v*']
@@ -43,9 +52,43 @@ jobs:
           if (Test-Path build-release/bios) { Copy-Item build-release/bios dist/bios -Recurse }
           if (Test-Path build-release/assets) { Copy-Item build-release/assets dist/assets -Recurse }
           Compress-Archive -Path dist/* -DestinationPath WCW-Windows-x64.zip
-          Get-FileHash WCW-Windows-x64.zip -Algorithm SHA256
+          $hash = (Get-FileHash WCW-Windows-x64.zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  WCW-Windows-x64.zip" | Set-Content WCW-Windows-x64.sha256 -Encoding ascii
       - uses: actions/upload-artifact@v4
         with:
           name: WCW-Windows-x64
-          path: WCW-Windows-x64.zip
+          path: |
+            WCW-Windows-x64.zip
+            WCW-Windows-x64.sha256
           if-no-files-found: error
+  release:
+    if: github.event_name == 'workflow_dispatch' && inputs.publish_release
+    needs: build
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: WCW-Windows-x64
+      - name: Publish pre-release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.version }}
+          GH_REPO: ${{ github.repository }}
+          BUILD_SHA: ${{ github.sha }}
+        run: |
+          $tag = $env:RELEASE_TAG
+          if ($tag -notmatch '^v[0-9][0-9A-Za-z.-]*$') { throw 'Invalid release tag' }
+          gh release view $tag --repo $env:GH_REPO 2>$null
+          if ($LASTEXITCODE -eq 0) { throw 'Release already exists; choose a new version.' }
+          $notes = @'
+          Experimental Windows x64 build of WCW Backstage Assault RECOMP.
+          Requires your own legally obtained USA game disc image (SLUS-01274).
+          Automated compilation passed; gameplay validation remains outstanding.
+          Credits: WCW Mayhem RECOMP (https://github.com/dotGrx/WCW-Mayhem-RECOMP), PSXRecomp, SDL3 and OpenBIOS contributors.
+          '@
+          $notes | Set-Content release-notes.md -Encoding utf8
+          gh release create $tag WCW-Windows-x64.zip WCW-Windows-x64.sha256 --repo $env:GH_REPO --target $env:BUILD_SHA --title "WCW Backstage Assault RECOMP - $tag" --notes-file release-notes.md --prerelease
+          if ($LASTEXITCODE -ne 0) { throw 'Release publishing failed.' }
