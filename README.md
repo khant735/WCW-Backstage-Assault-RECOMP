@@ -14,6 +14,8 @@ Captured from the native Windows recompilation during development.
 | --- | --- |
 | ![In-game options](Screenshot%202026-11-24%20211933.png) | ![Global options](Screenshot%202026-11-24%20211625.png) |
 
+![Additional Windows recompilation screenshot](Screenshot%202026-11-25%20004908.png)
+
 ## Downloads
 
 [Windows x64 experimental pre-release v0.15B.3](https://github.com/khant735/WCW-Backstage-Assault-RECOMP/releases/tag/v0.15B.3) — automated compilation and release publishing verified; gameplay testing of the published build remains pending.
