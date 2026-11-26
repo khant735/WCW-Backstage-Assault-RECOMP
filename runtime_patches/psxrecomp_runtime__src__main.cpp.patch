@@ -210,7 +210,30 @@
      }
      if (!sdl_texture) {
          const int tex_scale = netplay_cpu_auth_gpu() ? 1 : g_video_scale;
-@@ -6531,7 +6711,7 @@
+@@ -5225,6 +5405,22 @@
+                                        bool suppress_stick_axes,
+                                        int deadzone_raw) {
+     uint16_t buttons = 0xFFFF;  /* all released */
+     if (!h) return buttons;
++    // WCW uses digital movement even with a DualShock analog packet.
++    // Keep the raw axes available, but fold the left stick onto D-pad.
++    // Physical D-pad takes precedence to avoid contradictory directions.
++    if (suppress_stick_axes &&
++        !SDL_GameControllerGetButton(h, SDL_CONTROLLER_BUTTON_DPAD_UP) &&
++        !SDL_GameControllerGetButton(h, SDL_CONTROLLER_BUTTON_DPAD_DOWN) &&
++        !SDL_GameControllerGetButton(h, SDL_CONTROLLER_BUTTON_DPAD_LEFT) &&
++        !SDL_GameControllerGetButton(h, SDL_CONTROLLER_BUTTON_DPAD_RIGHT)) {
++        const int dz = deadzone_raw > 0 ? deadzone_raw : controller_deadzone;
++        const int x = SDL_GameControllerGetAxis(h, SDL_CONTROLLER_AXIS_LEFTX);
++        const int y = SDL_GameControllerGetAxis(h, SDL_CONTROLLER_AXIS_LEFTY);
++        if (x < -dz) buttons &= (uint16_t)~0x0080u;
++        if (x >  dz) buttons &= (uint16_t)~0x0020u;
++        if (y < -dz) buttons &= (uint16_t)~0x0010u;
++        if (y >  dz) buttons &= (uint16_t)~0x0040u;
++    }
+     for (const auto& entry : map) {
+         for (const auto& source : entry.sources) {
+@@ -6531,7 +6727,7 @@
          SDL_RenderClear(sdl_renderer);
          SDL_RenderCopy(sdl_renderer, sdl_texture, &s_sw_hold_src, &s_sw_hold_dst);
          host_osd_draw_sdl(sdl_renderer);
@@ -219,7 +242,7 @@
          did = 1;
      }
  #endif
-@@ -7180,7 +7360,7 @@
+@@ -7180,7 +7376,7 @@
              SDL_RenderCopy(sdl_renderer, sdl_texture, &s_sw_hold_src,
                             &s_sw_hold_dst);
          host_osd_draw_sdl(sdl_renderer);
@@ -228,7 +251,7 @@
      }
  #endif
  }
-@@ -7352,6 +7532,22 @@
+@@ -7352,6 +7548,22 @@
  static bool drain_host_events() {
 +    // SDL may block in the Windows modal move/resize loop. Refresh on
 +    // return, before the guest can execute another watchdog check.
@@ -252,7 +275,7 @@
          if (psx_local_mouse_event(ev)) continue;
          if (ev.type == SDL_QUIT) {
              if (psx_netplay_active()) {
-@@ -7388,6 +7584,24 @@
+@@ -7388,6 +7600,24 @@
              const SDL_Scancode scancode = ev.key.keysym.scancode;
              const int key_repeat = ev.key.repeat ? 1 : 0;
  #endif
@@ -277,7 +300,7 @@
              if (key == SDLK_ESCAPE && psx_netplay_active()) {
                  netplay_soft_exit("netplay_escape");
                  return false;
-@@ -7428,9 +7642,9 @@
+@@ -7428,9 +7658,9 @@
  #endif
              }
              else if (!key_repeat &&
@@ -289,7 +312,7 @@
                  fps_telemetry_toggle();
              }
              else if (!key_repeat &&
-@@ -7532,6 +7746,20 @@
+@@ -7532,6 +7762,20 @@
  #endif
  
 +    wcw_load_unlock();
@@ -310,7 +333,7 @@
      {
          /* Outside every debug guard on purpose: production must be measurable. */
          extern uint64_t s_frame_count;
-@@ -7551,6 +7779,7 @@
+@@ -7551,6 +7795,7 @@
          if (!s_fps_last_time) {
              s_fps_last_time = now;
              s_fps_last_frame = s_frame_count;
@@ -318,7 +341,7 @@
              if (sdl_window && s_fps_base_title.empty()) {
                  const char *title = SDL_GetWindowTitle(sdl_window);
                  if (title) s_fps_base_title = title;
-@@ -7559,12 +7788,7 @@
+@@ -7559,12 +7804,7 @@
              const double seconds = (double)(now - s_fps_last_time) / (double)frequency;
              const double fps = (double)(s_frame_count - s_fps_last_frame) / seconds;
              const double speed = fps / guest_video_standard_hz();
@@ -332,7 +355,7 @@
              if (!g_headless && sdl_window) {
                  char title[256];
                  if (display_fps > 0.0) {
-@@ -7581,12 +7805,16 @@
+@@ -7581,12 +7821,16 @@
                  char osd[96];
                  if (display_fps > 0.0) {
                      snprintf(osd, sizeof(osd),
@@ -351,7 +374,7 @@
                  host_osd_set_status(osd);
              }
              if (netplay_timing_on() && s_np_timing_frames > 0) {
-@@ -7625,6 +7853,7 @@
+@@ -7625,6 +7869,7 @@
              std::fflush(stderr);
              s_fps_last_time = now;
              s_fps_last_frame = s_frame_count;
@@ -359,7 +382,7 @@
          }
      }
  
-@@ -8132,7 +8361,7 @@
+@@ -8132,7 +8377,7 @@
                          SDL_SetRenderDrawColor(sdl_renderer, 0, 0, 0, 255);
                          SDL_RenderClear(sdl_renderer);
                          host_osd_draw_sdl(sdl_renderer);
@@ -368,7 +391,7 @@
                      }
                  }
              }
-@@ -8586,7 +8815,7 @@
+@@ -8586,7 +8831,7 @@
      {
          latency_ring_mark(LAT_SWAP_BEGIN);
          const Uint64 t0 = SDL_GetPerformanceCounter();
@@ -377,7 +400,7 @@
          const Uint64 t1 = SDL_GetPerformanceCounter();
          latency_ring_mark(LAT_SWAP_END);
          netplay_note_present();
-@@ -17371,7 +17600,17 @@
+@@ -17371,7 +17616,17 @@
       * widescreen hack); the present path letterboxes to the same aspect, so
       * the image scales to fill the larger window with no further distortion. */
      int game_w = g_video_win_w, game_h = 0;
@@ -396,7 +419,7 @@
      sdl_window = SDL_CreateWindow(
          window_title.c_str(),
          SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-@@ -17551,6 +17790,11 @@
+@@ -17551,6 +17806,11 @@
          const int tex_scale = netplay_cpu_auth_gpu() ? 1 : g_video_scale;
          g_logical_w = 480 * g_video_aspect_num * tex_scale / g_video_aspect_den;
          SDL_RenderSetLogicalSize(sdl_renderer, g_logical_w, 480 * tex_scale);
