@@ -116,6 +116,7 @@ jobs:
           New-Item -ItemType Directory dist -Force
           Copy-Item $exe.FullName dist
           Copy-Item game.toml,Launch.cmd,Launch_*.cmd dist
+          Copy-Item mods dist/mods -Recurse
           @'
           @echo off
           cd /d "%~dp0"
