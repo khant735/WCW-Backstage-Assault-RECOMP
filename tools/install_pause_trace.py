@@ -60,10 +60,10 @@ void wcw_focus_candidate(unsigned pc, unsigned value, unsigned source, unsigned 
         const char *e = getenv("WCW_FOCUS_TRACE");
         enabled = e && e[0] == '1' && !e[1];
         if (enabled) log = fopen("wcw-focus-trace.csv", "w");
-        if (log) fputs("seq,poll,slot,p1_buttons,PC,value,source,ra,sp\\n", log);
+        if (log) fputs("seq,poll,slot,p1_buttons,PC,value,source,ra,sp\n", log);
     }
     if (log) {
-        fprintf(log, "%llu,%llu,%u,%04X,%08X,%08X,%08X,%08X,%08X\\n",
+        fprintf(log, "%llu,%llu,%u,%04X,%08X,%08X,%08X,%08X,%08X\n",
                 ++seq, wcw_trace_poll, wcw_trace_slot, wcw_trace_buttons,
                 pc, value, source, ra, sp);
         if ((seq & 255u) == 0) fflush(log);
