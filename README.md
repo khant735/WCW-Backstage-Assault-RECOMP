@@ -18,6 +18,34 @@ Captured from the native Windows recompilation during development.
 
 ![Additional Windows recompilation screenshot](Screenshot%202026-11-25%20011312.png)
 
+### Main menu and options
+
+| Main menu | Advanced Options — proposed native menu layout |
+| --- | --- |
+| ![Main menu](Screenshot%202026-11-25%20200559.png) | ![Advanced Options layout](download%20%2820%29.png) |
+
+### Experimental cheats interface
+
+![Host cheats menu](Screenshot%202026-11-26%20183913.png)
+
+Native menu integration remains in development; the cheats interface shown is experimental.
+
+### Original graphics research
+
+Reference sheets for planned static texture enhancements, not screenshots of completed HD replacement rendering.
+
+**Loading backgrounds**
+
+![Loading backgrounds](WCW_loading_backgrounds.png)
+
+**Wrestler faces**
+
+![Wrestler portraits](download%20%2817%29.png)
+
+**Main menu background components**
+
+![Menu background components](WCW_menu_backgrounds.png)
+
 ## Downloads
 
 [Windows x64 experimental pre-release v0.15B.3](https://github.com/khant735/WCW-Backstage-Assault-RECOMP/releases/tag/v0.15B.3) — automated compilation and release publishing verified; gameplay testing of the published build remains pending.
@@ -60,7 +88,7 @@ Captured from the native Windows recompilation during development.
 1. Obtain the exact PSXRecomp revision above from its upstream project. Consult its **PolyForm Noncommercial 1.0.0** terms; commercial use requires separate permission. Extract as `psxrecomp/` beside this README.
 2. Apply patches in `runtime_patches/` from the `psxrecomp/` directory. With Git installed: `git apply ../runtime_patches/*.patch` on compatible Git Bash, or apply individually using `git apply ../runtime_patches/<patch-file>`. The patches represent modifications **to the upstream framework**, not to the game-generated sources.
 3. Install the required Windows x64 C/C++ toolchain, CMake, Ninja, Python, SDL3 dependencies and use `build-windows.ps1` as a starting point. The tested development environment cross-compiled from Linux using LLVM-MinGW UCRT and SDL3 3.4.18; the Windows PowerShell build has since passed GitHub Actions.
-4. Supply your **own legally obtained** Backstage Assault USA BIN/CUE separately under `disc/` as configured in `game.toml`, with any required BIOS/runtime resources under the locations expected by PSXRecomp. Original discs, commercial game images and extracted disc assets are not included.
+4. Supply your **own legally obtained** Backstage Assault USA BIN/CUE separately under `disc/` as configured in `game.toml`, with any required BIOS/runtime resources under the locations expected by PSXRecomp. Original discs and commercial game images are not included; selected graphics reference sheets are shown above.
 5. Build and run the result, for example through a `Launch_*.cmd` file from the executable directory.
 
 **Reproducibility caveat:** Stage 15B.3 compiled successfully with this local framework working tree, but the public-source layout has since compiled successfully in GitHub Actions; runtime testing of the published build remains pending. See [build notes](docs/BUILD_AND_PROVENANCE.md).
@@ -71,4 +99,4 @@ See [ROADMAP.md](docs/ROADMAP.md): actual extended widescreen visibility and 17:
 
 ## Legal / distribution
 
-This fan research project is not affiliated with Sony, WCW, WWE, Kodiak Interactive, or original rights holders. No PlayStation game disc, BIN/CUE, original game extracted assets or licensed BIOS is distributed here. The generated C source is derived from analysis of the game executable and may be subject to the game's original copyright; public redistribution requires an independent rights assessment. No licence is asserted over third-party game content. PSXRecomp and its runtime are subject to **PolyForm Noncommercial 1.0.0**. SDL3 and OpenBIOS have their respective licences. The upstream [WCW-Mayhem-RECOMP](https://github.com/dotGrx/WCW-Mayhem-RECOMP) project is credited as a technical reference; this repository does not imply its authors endorse this port.
+This fan research project is not affiliated with Sony, WCW, WWE, Kodiak Interactive, or original rights holders. No PlayStation game disc, BIN/CUE or licensed BIOS is distributed here. Selected original graphics reference sheets are included for research; rights remain with their respective owners. The generated C source is derived from analysis of the game executable and may be subject to the game's original copyright; public redistribution requires an independent rights assessment. No licence is asserted over third-party game content. PSXRecomp and its runtime are subject to **PolyForm Noncommercial 1.0.0**. SDL3 and OpenBIOS have their respective licences. The upstream [WCW-Mayhem-RECOMP](https://github.com/dotGrx/WCW-Mayhem-RECOMP) project is credited as a technical reference; this repository does not imply its authors endorse this port.
