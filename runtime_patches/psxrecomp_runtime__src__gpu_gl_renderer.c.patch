@@ -63,3 +63,23 @@
  }
  
  /* Output pixels per source texel below which a supersampled present switches
+@@ -7843,6 +7871,19 @@
+ void gl_renderer_present_vram(int disp_x, int disp_y, int w, int h, int linear,
+                               int force_4_3) {
+     if (!s_ctx || !s_raster_ok) return;
++    /* WCW diagnostic only: record identity transitions at native presentation. */
++    extern uint64_t wcw_loading_framebuffer_id(int, int, int, int);
++    static uint64_t wcw_last_loading_id = 0;
++    const uint64_t wcw_id = wcw_loading_framebuffer_id(disp_x, disp_y, w, h);
++    if (wcw_id != wcw_last_loading_id) {
++        FILE *f = fopen("wcw-loading-present.csv", "a");
++        if (f) {
++            fprintf(f, "%d,%d,%d,%d,%016llX\n", disp_x, disp_y, w, h,
++                    (unsigned long long)wcw_id);
++            fclose(f);
++        }
++        wcw_last_loading_id = wcw_id;
++    }
+     flush_flat_batch();
+     flush_tex_batch();
+     flush_cpu_upload();
