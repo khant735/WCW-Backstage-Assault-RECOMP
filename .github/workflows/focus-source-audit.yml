@@ -1,0 +1,33 @@
+name: Free Focus source audit
+on:
+  push:
+    paths:
+      - '.github/workflows/focus-source-audit.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract candidate instruction context
+        shell: bash
+        run: |
+          python3 - <<'PY' > focus-source-audit.txt
+          from pathlib import Path
+          import re
+          targets = ['80018090','8006F430','80013EF4','80018074','8006EBB0','8006E960','8006E96C']
+          pattern = re.compile(r'0x(?:' + '|'.join(targets) + r')\b', re.I)
+          for path in sorted(Path('generated').glob('*.c')):
+              lines = path.read_text(encoding='utf-8').splitlines()
+              for i,line in enumerate(lines):
+                  if pattern.search(line):
+                      print(f'=== {path}:{i+1} ===')
+                      for n in range(max(0,i-45),min(len(lines),i+46)):
+                          print(f'{n+1}: {lines[n]}')
+          PY
+          wc -l focus-source-audit.txt
+          head -n 180 focus-source-audit.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: focus-source-audit
+          path: focus-source-audit.txt
