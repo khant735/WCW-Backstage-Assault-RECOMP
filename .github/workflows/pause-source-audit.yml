@@ -1,0 +1,24 @@
+name: Pause source audit
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/pause-source-audit.yml'
+      - 'tools/find_pause_candidates.py'
+permissions:
+  contents: read
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan generated game source
+        run: |
+          python3 tools/find_pause_candidates.py > pause-candidates.txt
+          wc -l pause-candidates.txt
+          head -n 100 pause-candidates.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pause-source-candidates
+          path: pause-candidates.txt
+          if-no-files-found: error
