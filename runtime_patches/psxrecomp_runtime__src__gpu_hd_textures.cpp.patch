@@ -53,18 +53,30 @@ diff --git a/runtime/src/gpu_hd_textures.cpp b/runtime/src/gpu_hd_textures.cpp
 +    wcw_loading_ids[0] = wcw_loading_ids[1] = 0;
      if (!session) return;
      hd_texture_pack_reset_tracking(session->beetle);
-@@ -191,3 +235,7 @@
+@@ -191,3 +235,18 @@
  extern "C" void gpu_hd_textures_invalidate(int x, int y, int width, int height) {
 +    if (wcw_loading_trace_enabled() && width > 0 && height > 0) {
-+        // Conservative: clear both on every write, including wrapped writes.
-+        wcw_loading_ids[0] = wcw_loading_ids[1] = 0;
++        // Split wrapped writes into at most two intervals per axis.
++        const auto overlaps = [](int start, int len, int period, int lo, int hi) {
++            if (len >= period) return true;
++            start = ((start % period) + period) % period;
++            const int end = start + len;
++            return (start < hi && end > lo) ||
++                   (end > period && end - period > lo);
++        };
++        if (overlaps(x, width, 1024, 0, 512)) {
++            for (int b = 0; b < 2; ++b)
++                if (overlaps(y, height, 512, b * 256, b * 256 + 240))
++                    wcw_loading_ids[b] = 0;
++        }
 +    }
      if (!session || width < 1 || height < 1) return;
      if (width > 1024 || height > 512) { gpu_hd_textures_reset_tracking(); return; }
-@@ -197,5 +245,27 @@
+@@ -197,5 +256,28 @@
  extern "C" void gpu_hd_textures_track_upload(int x, int y, int width, int height,
                                               const uint16_t* words) {
 +    const bool trace = wcw_loading_trace_enabled();
++    if (trace) gpu_hd_textures_invalidate(x, y, width, height);
 +    if (trace && native_vram && words && width == 512 && height == 240) {
 +        XXH3_state_t state;
 +        XXH3_64bits_reset(&state);
