@@ -43,7 +43,34 @@ print(f"Instrumented {count} candidate sites")
 # L2 is bit 0x0100 in the PSX active-low pad word. These are candidates,
 # not confirmed input handlers. Reuse the proven generated-code format.
 focus_pattern = re.compile(pattern.pattern.replace("0x0008", "0x0*100"))
-focus_header = header.replace("wcw_pause_candidate", "wcw_focus_candidate").replace("WCW_PAUSE_TRACE", "WCW_FOCUS_TRACE").replace("wcw-pause-trace.csv", "wcw-focus-trace.csv").replace("fflush(log);", "/* buffered; flushed on normal process exit */")
+focus_header = r'''
+extern void wcw_focus_candidate(unsigned pc, unsigned value, unsigned source, unsigned ra, unsigned sp);
+'''
+focus_impl = r'''
+#include <stdio.h>
+#include <stdlib.h>
+extern unsigned long long wcw_trace_poll;
+extern unsigned wcw_trace_buttons;
+extern unsigned wcw_trace_slot;
+void wcw_focus_candidate(unsigned pc, unsigned value, unsigned source, unsigned ra, unsigned sp) {
+    static int enabled = -1;
+    static FILE *log = NULL;
+    static unsigned long long seq = 0;
+    if (enabled < 0) {
+        const char *e = getenv("WCW_FOCUS_TRACE");
+        enabled = e && e[0] == '1' && !e[1];
+        if (enabled) log = fopen("wcw-focus-trace.csv", "w");
+        if (log) fputs("seq,poll,slot,p1_buttons,PC,value,source,ra,sp\\n", log);
+    }
+    if (log) {
+        fprintf(log, "%llu,%llu,%u,%04X,%08X,%08X,%08X,%08X,%08X\\n",
+                ++seq, wcw_trace_poll, wcw_trace_slot, wcw_trace_buttons,
+                pc, value, source, ra, sp);
+        if ((seq & 255u) == 0) fflush(log);
+    }
+}
+'''
+focus_owner = False
 focus_count = 0
 for path in sorted(root.glob("SLUS_012.74_full_*.c")):
     source = path.read_text(encoding="utf-8")
@@ -53,8 +80,10 @@ for path in sorted(root.glob("SLUS_012.74_full_*.c")):
         if not reg:
             return m[0]
         focus_count += 1
-        return m[0] + f"\n    wcw_focus_candidate(0x{m[2]}u, cpu->gpr[{reg[1]}]);"
+        src = re.search(r"cpu->gpr\[\d+\]\s*=\s*cpu->gpr\[(\d+)\]\s*&", m[1])
+        return m[0] + f"\n    wcw_focus_candidate(0x{m[2]}u, cpu->gpr[{reg[1]}], cpu->gpr[{src[1]}], cpu->gpr[31], cpu->gpr[29]);"
     result = focus_pattern.sub(focus_hook, source)
     if result != source:
-        path.write_text(focus_header + result, encoding="utf-8")
+        path.write_text((focus_header if focus_owner else focus_impl) + result, encoding="utf-8")
+        focus_owner = True
 print(f"Instrumented {focus_count} L2 mask candidate sites")
