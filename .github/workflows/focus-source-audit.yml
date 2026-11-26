@@ -38,7 +38,14 @@ jobs:
                           if re.search(r'/\* 0x[0-9A-Fa-f]{8}:|goto block_|cpu->gpr\[31\] =|psx_cyc_load|cpu->write_',s):
                               print(s.strip())
           PY
+      - name: Locate controller API references
+        run: |
+          grep -inE 'PadRead|PadInit|PadStart|PadGetState|PadInfo|PadSet|InitPAD|StartPAD|ChangeClearPAD|0x1f80104[048ace]' generated/*.c > controller-api-audit.txt || true
+          wc -l controller-api-audit.txt
+          cut -c1-300 controller-api-audit.txt | head -n 100
       - uses: actions/upload-artifact@v4
         with:
           name: focus-source-audit
-          path: focus-source-audit.txt
+          path: |
+            focus-source-audit.txt
+            controller-api-audit.txt
