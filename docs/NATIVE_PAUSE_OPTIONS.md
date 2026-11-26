@@ -50,3 +50,8 @@ Expose GPU compression ON/OFF, BC7/BPTC (preferred when supported), BC3/DXT5, BC
 
 ## Framebuffer and MDEC enhancement (approved)
 Separate switches for texture, framebuffer and video enhancement. Framebuffer and live MDEC: GPU spatial nearest/bilinear/bicubic/Lanczos, optional sharpening and video deblocking; investigate FSR1. Preserve guest VRAM, timing, audio sync, native aspect and original fallback. No per-frame BC encoding or AI inference by default. Optional offline enhanced video cache (H264/H265), optional 30/60fps interpolation only after timing verification. Avoid double enhancement and exclude host OSD/bezel from content filters. Pinned renderer audit (8077e71098ce0347d7d41d267630bc856816cf77): gpu_gl_renderer.c upload_present_tex line 4292; shared presentation shader comment 4338; MDEC upload handling 4131–4261; force_4_3 comment 5695; supersampled present 7654. These are candidate integration points, not verified complete playback coverage. Implement and test separate content-only shader path before offline video replacement. All settings remain in native Advanced Options, not Pause. Implementation pending.
+
+
+## Stage 15B.111 — FMV enhancement suspended
+
+User reports live FMV enhancement is too slow. Retain original FMV playback and filtering defaults. Suspend Lanczos, sharpening, AI and interpolation for live FMV; existing experimental launcher is not recommended for normal play. Prioritize static loading screens, then menu and game texture replacements with cached enhancement, 1–7.5x in 0.5x increments, and original fallback. Do not enable experimental FMV enhancement by default. Native Advanced Options remains the intended configuration surface.
