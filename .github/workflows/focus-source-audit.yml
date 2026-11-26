@@ -43,9 +43,33 @@ jobs:
           grep -inE 'PadRead|PadInit|PadStart|PadGetState|PadInfo|PadSet|InitPAD|StartPAD|ChangeClearPAD|0x1f80104[048ace]' generated/*.c > controller-api-audit.txt || true
           wc -l controller-api-audit.txt
           cut -c1-300 controller-api-audit.txt | head -n 100
+      - name: Audit split hardware addresses and BIOS call candidates
+        run: |
+          python3 - <<'PY' > pad-hardware-audit.txt
+          from pathlib import Path
+          import re
+          for path in sorted(Path('generated').glob('*.c')):
+              ops = []
+              for line in path.read_text().splitlines():
+                  m = re.search(r'/\* 0x([0-9a-f]{8}): 0x([0-9a-f]{8}) \*/',line,re.I)
+                  if m:
+                      ops.append((int(m[1],16),int(m[2],16)))
+              for i,(pc,w) in enumerate(ops):
+                  if w >> 26 == 15 and w & 65535 in (0x1f80,0xbf80,0x9f80):
+                      reg = (w >> 16) & 31
+                      for q,v in ops[i+1:i+25]:
+                          if q-pc > 96 or q <= pc: break
+                          if (v >> 21)&31 == reg and v&65535 in range(0x1040,0x1050):
+                              print(path.name,hex(pc),hex(q),hex(v))
+                  if w >> 26 == 3 and (w & 0x3ffffff)*4 in (0xa0,0xb0,0xc0):
+                      print(path.name,hex(pc),'BIOS JAL',hex((w&0x3ffffff)*4))
+          PY
+          wc -l pad-hardware-audit.txt
+          head -n 120 pad-hardware-audit.txt
       - uses: actions/upload-artifact@v4
         with:
           name: focus-source-audit
           path: |
             focus-source-audit.txt
             controller-api-audit.txt
+            pad-hardware-audit.txt
