@@ -1,6 +1,6 @@
 --- a/runtime/src/main.cpp
 +++ b/runtime/src/main.cpp
-@@ -543,6 +543,163 @@
+@@ -543,6 +543,169 @@
  }
  static Uint64   s_fps_last_time = 0;
  static uint64_t s_fps_last_frame = 0;
@@ -54,7 +54,11 @@
 +    SDL_GLContext context=SDL_GL_GetCurrentContext();
 +    SDL_Window *win=SDL_CreateWindow("WCW Advanced Options - Cheats",SDL_WINDOWPOS_CENTERED,SDL_WINDOWPOS_CENTERED,720,600,0);
 +    if(!win){wcw_window_log(SDL_GetError());return;}
-+    SDL_Renderer *ren=SDL_CreateRenderer(win,-1,SDL_RENDERER_SOFTWARE);
++    SDL_PropertiesID props=SDL_CreateProperties();
++    SDL_SetPointerProperty(props,SDL_PROP_RENDERER_CREATE_WINDOW_POINTER,win);
++    SDL_SetStringProperty(props,SDL_PROP_RENDERER_CREATE_NAME_STRING,"software");
++    SDL_Renderer *ren=SDL_CreateRendererWithProperties(props);
++    SDL_DestroyProperties(props);
 +    if(!ren){wcw_window_log(SDL_GetError());SDL_DestroyWindow(win);if(previous && context)SDL_GL_MakeCurrent(previous,context);return;}
 +    wcw_window_log("Cheat window opened (software renderer)");
 +    SDL_Event deferred[256]; unsigned deferred_count=0;
@@ -64,7 +68,9 @@
 +    while (!done) {
 +        int id=-1, action=-1;
 +        SDL_Event ev;
++        starvation_watchdog_heartbeat();
 +        while(SDL_PollEvent(&ev)) {
++            starvation_watchdog_heartbeat();
 +            if(ev.type==SDL_EVENT_QUIT){if(deferred_count<256)deferred[deferred_count++]=ev;done=true;break;}
 +            if(ev.type>=SDL_EVENT_WINDOW_FIRST && ev.type<=SDL_EVENT_WINDOW_LAST){
 +                if(ev.window.windowID!=SDL_GetWindowID(win)){
@@ -145,7 +151,7 @@
 +#if defined(PSX_SDL3)
 +    SDL_DestroyRenderer(ren); SDL_DestroyWindow(win);
 +    if(previous && context){
-+        if(!SDL_GL_MakeCurrent(previous,context))wcw_window_log(SDL_GetError());
++        if(SDL_GL_MakeCurrent(previous,context)!=0)wcw_window_log(SDL_GetError());
 +        else wcw_window_log("Original OpenGL context restored");
 +    }
 +    if(previous)SDL_RaiseWindow(previous);
@@ -164,7 +170,7 @@
  static std::string s_fps_base_title;
  static int      s_fps_telemetry_enabled = -1; /* -1 = unread env */
  static FramePacer s_frame_pacer = { 0 };
-@@ -600,7 +757,7 @@
+@@ -600,7 +763,7 @@
  static int fps_telemetry_enabled(void) {
      if (s_fps_telemetry_enabled < 0) {
          const char *e = std::getenv("PSX_FPS_TELEMETRY");
@@ -173,7 +179,7 @@
      }
      return s_fps_telemetry_enabled;
  }
-@@ -2002,6 +2159,18 @@
+@@ -2002,6 +2165,18 @@
                       g_ws_hud_sprt ? 1 : 0, mode);
  }
  
@@ -192,7 +198,7 @@
  /* Follow the host window without feeding its absolute pixel size into guest
   * rendering. Only the ratio matters: gpu_ws_configure derives the PSX-native
   * sidecar width from it, just as the fixed 16:9/21:9 modes do. */
-@@ -2298,6 +2467,11 @@
+@@ -2298,6 +2473,11 @@
          g_logical_w = 480 * g_video_aspect_num * tex_scale / g_video_aspect_den;
          if (g_logical_w < 1) g_logical_w = 640;
          SDL_RenderSetLogicalSize(sdl_renderer, g_logical_w, 480 * tex_scale);
@@ -204,7 +210,7 @@
      }
      if (!sdl_texture) {
          const int tex_scale = netplay_cpu_auth_gpu() ? 1 : g_video_scale;
-@@ -6531,7 +6705,7 @@
+@@ -6531,7 +6711,7 @@
          SDL_RenderClear(sdl_renderer);
          SDL_RenderCopy(sdl_renderer, sdl_texture, &s_sw_hold_src, &s_sw_hold_dst);
          host_osd_draw_sdl(sdl_renderer);
@@ -213,7 +219,7 @@
          did = 1;
      }
  #endif
-@@ -7180,7 +7354,7 @@
+@@ -7180,7 +7360,7 @@
              SDL_RenderCopy(sdl_renderer, sdl_texture, &s_sw_hold_src,
                             &s_sw_hold_dst);
          host_osd_draw_sdl(sdl_renderer);
@@ -222,12 +228,39 @@
      }
  #endif
  }
-@@ -7388,6 +7562,21 @@
+@@ -7352,6 +7532,22 @@
+ static bool drain_host_events() {
++    // SDL may block in the Windows modal move/resize loop. Refresh on
++    // return, before the guest can execute another watchdog check.
++    struct WcwHostEventScope {
++        ~WcwHostEventScope() { starvation_watchdog_heartbeat(); }
++    } wcw_host_event_scope;
+     SDL_Event ev;
+-    while (SDL_PollEvent(&ev)) {
++    const auto poll_host_event = [](SDL_Event* event) {
++        const auto before = SDL_GetTicks();
++        const bool got = SDL_PollEvent(event);
++        starvation_watchdog_heartbeat();
++        if(SDL_GetTicks()-before>250) {
++            s_frame_pacer=FramePacer{0};
++            s_fps_last_time=0;
++            wcw_window_log("Host event pump resumed after blocking");
++        }
++        return got;
++    };
++    while (poll_host_event(&ev)) {
+         if (psx_local_mouse_event(ev)) continue;
+         if (ev.type == SDL_QUIT) {
+             if (psx_netplay_active()) {
+@@ -7388,6 +7584,24 @@
              const SDL_Scancode scancode = ev.key.keysym.scancode;
              const int key_repeat = ev.key.repeat ? 1 : 0;
  #endif
 +            if (!key_repeat && key == SDLK_F10 && !psx_netplay_active()) {
++                starvation_watchdog_heartbeat();
 +                wcw_advanced_options();
++                starvation_watchdog_heartbeat();
++                s_frame_pacer = FramePacer{0};
 +                continue;
 +            }
 +            if (!key_repeat && key == SDLK_F9 && sdl_window && !psx_netplay_active()) {
@@ -244,7 +277,7 @@
              if (key == SDLK_ESCAPE && psx_netplay_active()) {
                  netplay_soft_exit("netplay_escape");
                  return false;
-@@ -7428,9 +7617,9 @@
+@@ -7428,9 +7642,9 @@
  #endif
              }
              else if (!key_repeat &&
@@ -256,7 +289,7 @@
                  fps_telemetry_toggle();
              }
              else if (!key_repeat &&
-@@ -7532,6 +7721,20 @@
+@@ -7532,6 +7746,20 @@
  #endif
  
 +    wcw_load_unlock();
@@ -277,7 +310,7 @@
      {
          /* Outside every debug guard on purpose: production must be measurable. */
          extern uint64_t s_frame_count;
-@@ -7551,6 +7754,7 @@
+@@ -7551,6 +7779,7 @@
          if (!s_fps_last_time) {
              s_fps_last_time = now;
              s_fps_last_frame = s_frame_count;
@@ -285,7 +318,7 @@
              if (sdl_window && s_fps_base_title.empty()) {
                  const char *title = SDL_GetWindowTitle(sdl_window);
                  if (title) s_fps_base_title = title;
-@@ -7559,12 +7763,7 @@
+@@ -7559,12 +7788,7 @@
              const double seconds = (double)(now - s_fps_last_time) / (double)frequency;
              const double fps = (double)(s_frame_count - s_fps_last_frame) / seconds;
              const double speed = fps / guest_video_standard_hz();
@@ -299,7 +332,7 @@
              if (!g_headless && sdl_window) {
                  char title[256];
                  if (display_fps > 0.0) {
-@@ -7581,12 +7780,16 @@
+@@ -7581,12 +7805,16 @@
                  char osd[96];
                  if (display_fps > 0.0) {
                      snprintf(osd, sizeof(osd),
@@ -318,7 +351,7 @@
                  host_osd_set_status(osd);
              }
              if (netplay_timing_on() && s_np_timing_frames > 0) {
-@@ -7625,6 +7828,7 @@
+@@ -7625,6 +7853,7 @@
              std::fflush(stderr);
              s_fps_last_time = now;
              s_fps_last_frame = s_frame_count;
@@ -326,7 +359,11 @@
          }
      }
  
-@@ -8132,7 +8336,7 @@
+@@ -8038,1 +8267,3 @@
+                 SDL_PumpEvents(); // retain native timing when no policy exists
++                starvation_watchdog_heartbeat();
++
+@@ -8132,7 +8363,7 @@
                          SDL_SetRenderDrawColor(sdl_renderer, 0, 0, 0, 255);
                          SDL_RenderClear(sdl_renderer);
                          host_osd_draw_sdl(sdl_renderer);
@@ -335,7 +372,7 @@
                      }
                  }
              }
-@@ -8586,7 +8790,7 @@
+@@ -8586,7 +8817,7 @@
      {
          latency_ring_mark(LAT_SWAP_BEGIN);
          const Uint64 t0 = SDL_GetPerformanceCounter();
@@ -344,7 +381,7 @@
          const Uint64 t1 = SDL_GetPerformanceCounter();
          latency_ring_mark(LAT_SWAP_END);
          netplay_note_present();
-@@ -17371,7 +17575,17 @@
+@@ -17371,7 +17602,17 @@
       * widescreen hack); the present path letterboxes to the same aspect, so
       * the image scales to fill the larger window with no further distortion. */
      int game_w = g_video_win_w, game_h = 0;
@@ -363,7 +400,7 @@
      sdl_window = SDL_CreateWindow(
          window_title.c_str(),
          SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-@@ -17551,6 +17765,11 @@
+@@ -17551,6 +17792,11 @@
          const int tex_scale = netplay_cpu_auth_gpu() ? 1 : g_video_scale;
          g_logical_w = 480 * g_video_aspect_num * tex_scale / g_video_aspect_den;
          SDL_RenderSetLogicalSize(sdl_renderer, g_logical_w, 480 * tex_scale);
