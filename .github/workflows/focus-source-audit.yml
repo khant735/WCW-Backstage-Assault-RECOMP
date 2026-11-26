@@ -141,7 +141,7 @@ jobs:
           for path in sorted(Path('generated').glob('*.c')):
               lines = path.read_text().splitlines()
               for i,line in enumerate(lines):
-                  if any('CPS jal -> 0x'+t in line.upper().replace('CPS JAL -> 0X','CPS jal -> 0x') for t in targets):
+                  if re.search(r'CPS (?:jal|j) -> 0x('+ '|'.join(sorted(targets)) +r')\b', line, re.I):
                       print('CALL',path.name,i+1)
                       print('\n'.join(lines[max(0,i-100):i+8]))
           PY
