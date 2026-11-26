@@ -57,17 +57,22 @@ jobs:
               const char *enabled = getenv("WCW_PUP_TRACE");
               if (!enabled || strcmp(enabled,"1")) return;
               uint32_t dst=cpu->gpr[16], src=cpu->gpr[17], n=cpu->gpr[18], off;
-              if (!cpu->gpr[2] || !cpu->read_byte || !cpu->read_word) return;
-              if (n!=5456 && n!=7504 && n!=9552) return;
-              if ((dst>>29)!=4 && (dst>>29)!=5 && (dst>>29)!=0) return;
-              if (!psx_ram_resolve(dst,n,&off)) return;
-              if (cpu->read_word(0x80071C48u)!=0x14400004u) return;
-              if (cpu->read_byte(dst+0x310)!='S' || cpu->read_byte(dst+0x311)!='H' || cpu->read_byte(dst+0x312)!='P' || cpu->read_byte(dst+0x313)!='P') return;
-              if (cpu->read_byte(dst+0x330)!=0x41) return;
-              unsigned w=cpu->read_byte(dst+0x334)|(cpu->read_byte(dst+0x335)<<8), h=cpu->read_byte(dst+0x336)|(cpu->read_byte(dst+0x337)<<8);
-              if (!((w==32 && h==128)||(w==64 && (h==64||h==96||h==128))) || w*h+1360!=n) return;
+              const char *reason="MATCH";
+              unsigned w=0,h=0;
+              if (!cpu->gpr[2]) reason="ZERO_RESULT";
+              else if (!cpu->read_byte || !cpu->read_word) reason="NO_READ_CALLBACK";
+              else if (n!=5456 && n!=7504 && n!=9552) reason="OTHER_SIZE";
+              else if ((dst>>29)!=4 && (dst>>29)!=5 && (dst>>29)!=0) reason="ADDRESS";
+              else if (!psx_ram_resolve(dst,n,&off)) reason="RAM_RANGE";
+              else if (cpu->read_byte(dst+0x310)!='S' || cpu->read_byte(dst+0x311)!='H' || cpu->read_byte(dst+0x312)!='P' || cpu->read_byte(dst+0x313)!='P') reason="SIGNATURE";
+              else if (cpu->read_byte(dst+0x330)!=0x41) reason="FORMAT";
+              else {
+                  w=cpu->read_byte(dst+0x334)|(cpu->read_byte(dst+0x335)<<8);
+                  h=cpu->read_byte(dst+0x336)|(cpu->read_byte(dst+0x337)<<8);
+                  if (!((w==32 && h==128)||(w==64 && (h==64||h==96||h==128))) || w*h+1360!=n) reason="DIMENSIONS";
+              }
               FILE *f=fopen("wcw-pup-trace.csv","a"); if (!f) return;
-              fprintf(f,"80071C48,%08X,%08X,%u,%08X,%08X,%08X,%u,%u\n",(unsigned)dst,(unsigned)src,(unsigned)n,(unsigned)cpu->gpr[19],(unsigned)cpu->gpr[20],(unsigned)cpu->gpr[2],w,h); fclose(f);
+              fprintf(f,"80071C48,%08X,%08X,%u,%08X,%08X,%08X,%u,%u,%s\n",(unsigned)dst,(unsigned)src,(unsigned)n,(unsigned)cpu->gpr[19],(unsigned)cpu->gpr[20],(unsigned)cpu->gpr[2],w,h,reason); fclose(f);
           }
           #endif
           '@ | Set-Content generated/wcw_pup_trace.h -Encoding ascii
@@ -84,6 +89,14 @@ jobs:
           New-Item -ItemType Directory dist -Force
           Copy-Item $exe.FullName dist
           Copy-Item game.toml,Launch.cmd,Launch_*.cmd dist
+          @'
+          @echo off
+          cd /d "%~dp0"
+          set "WCW_PUP_TRACE=1"
+          >wcw-pup-trace.csv echo PC,destination,source,size,S3,S4,V0,width,height,result
+          >>wcw-pup-trace.csv echo STARTUP_LAUNCHER
+          call Launch.cmd
+          '@ | Set-Content dist/Launch_PUP_Trace.cmd -Encoding ascii
           if (Test-Path build-release/bios) { Copy-Item build-release/bios dist/bios -Recurse }
           if (Test-Path build-release/assets) { Copy-Item build-release/assets dist/assets -Recurse }
           Compress-Archive -Path dist/* -DestinationPath WCW-Windows-x64.zip
