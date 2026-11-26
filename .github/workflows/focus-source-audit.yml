@@ -123,6 +123,29 @@ jobs:
                       print(i+1,s.strip())
           PY
           cat pad-init-routines.txt
+      - name: Locate callers of controller initialization routines
+        run: |
+          python3 - <<'PY' > pad-init-callers.txt
+          from pathlib import Path
+          import re
+          p = Path('generated/SLUS_012.74_full_28.c')
+          lines = p.read_text().splitlines()
+          targets = {'800600FC'}
+          for i in (4509,4948):
+              for line in reversed(lines[:i]):
+                  m = re.match(r'void func_([0-9A-Fa-f]+)\(',line)
+                  if m:
+                      targets.add(m[1].upper())
+                      break
+          print('TARGETS',sorted(targets))
+          for path in sorted(Path('generated').glob('*.c')):
+              lines = path.read_text().splitlines()
+              for i,line in enumerate(lines):
+                  if any('CPS jal -> 0x'+t in line.upper().replace('CPS JAL -> 0X','CPS jal -> 0x') for t in targets):
+                      print('CALL',path.name,i+1)
+                      print('\n'.join(lines[max(0,i-100):i+8]))
+          PY
+          cat pad-init-callers.txt
       - uses: actions/upload-artifact@v4
         with:
           name: focus-source-audit
@@ -133,3 +156,4 @@ jobs:
             pad-callers.txt
             pad-wrappers.txt
             pad-init-routines.txt
+            pad-init-callers.txt
