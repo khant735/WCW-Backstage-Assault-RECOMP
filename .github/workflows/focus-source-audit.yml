@@ -107,7 +107,8 @@ jobs:
           print('WRAPPER COUNT',len(targets))
           PY
           wc -l pad-wrappers.txt
-          head -n 300 pad-wrappers.txt
+          grep -E '^(WRAPPER|CALLER)' pad-wrappers.txt
+          sed -n '/^CALLER/,$p' pad-wrappers.txt | head -n 450
       - uses: actions/upload-artifact@v4
         with:
           name: focus-source-audit
