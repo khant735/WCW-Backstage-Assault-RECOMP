@@ -66,6 +66,19 @@ jobs:
           PY
           wc -l pad-hardware-audit.txt
           head -n 120 pad-hardware-audit.txt
+      - name: Extract observed BIOS callers
+        run: |
+          python3 - <<'PY' > pad-callers.txt
+          from pathlib import Path
+          import re
+          targets = [0x800529a0,0x8005fef8,0x8005ff6c]
+          for path in sorted(Path('generated').glob('*.c')):
+              for line in path.read_text().splitlines():
+                  m = re.search(r'/\* 0x([0-9a-f]{8}): 0x([0-9a-f]{8}) \*/',line,re.I)
+                  if m and any(t-96 <= int(m[1],16) <= t+48 for t in targets):
+                      print(path.name,m[1],m[2],line.strip())
+          PY
+          cat pad-callers.txt
       - uses: actions/upload-artifact@v4
         with:
           name: focus-source-audit
@@ -73,3 +86,4 @@ jobs:
             focus-source-audit.txt
             controller-api-audit.txt
             pad-hardware-audit.txt
+            pad-callers.txt
