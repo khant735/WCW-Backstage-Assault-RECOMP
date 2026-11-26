@@ -1,6 +1,46 @@
 --- a/runtime/src/gpu_gl_renderer.c
 +++ b/runtime/src/gpu_gl_renderer.c
-@@ -4430,6 +4430,15 @@
+@@ -1224,6 +1224,20 @@
+     "      acc += texture(u_tex, clamp((base + vec2(i, j) * st) / u_tex_size, lo, hi));\n"
+     "  return acc / float(n.x * n.y);\n"
+     "}\n"
++    /* WCW opt-in Lanczos-2 for the CPU presentation texture. */
++    "float wcw_lanczos_weight(float x){\n"
++    "  x = abs(x); if (x < 0.0001) return 1.0; if (x >= 2.0) return 0.0;\n"
++    "  float p = 3.14159265359 * x; return sin(p)*sin(p*0.5)/(p*p*0.5);\n"
++    "}\n"
++    "vec4 wcw_lanczos(vec2 uv){\n"
++    "  vec2 p = uv*u_tex_size-0.5; vec2 b = floor(p); vec2 f = p-b;\n"
++    "  vec2 lo = min(u_uv_rect.xy,u_uv_rect.zw); vec2 hi = max(u_uv_rect.xy,u_uv_rect.zw);\n"
++    "  vec4 c = vec4(0.0); float total = 0.0;\n"
++    "  for(int j=-1;j<=2;j++) for(int i=-1;i<=2;i++){\n"
++    "    float w = wcw_lanczos_weight(float(i)-f.x)*wcw_lanczos_weight(float(j)-f.y);\n"
++    "    c += w*texture(u_tex,clamp((b+vec2(i,j)+0.5)/u_tex_size,lo,hi)); total += w;\n"
++    "  } return clamp(c/max(total,0.0001),0.0,1.0);\n"
++    "}\n"
+     "void main(){\n"
+     "  vec2 uv = v_uv;\n"
+     "  vec4 c;\n"
+@@ -1229,6 +1243,7 @@
+     "  vec4 c;\n"
+     "  if (u_sharp == 2) { c = bicubic(uv); }\n"
+     "  else if (u_sharp == 3) { c = area_resolve(uv); }\n"
++    "  else if (u_sharp == 4) { c = wcw_lanczos(uv); }\n"
+     "  else {\n"
+     "    if (u_sharp == 1) {\n"
+     "      vec2 scale = max(u_sharp_scale, vec2(1.0));\n"
+@@ -5153,6 +5168,10 @@
+      * costs 10% of it, which reads as blur. Still a taste call, hence the knob. */
+     int filt_mode = linear ? fmv_filter_mode()
+                            : -1;          /* AA off: nearest, no shader work */
++    /* Explicit experimental override; original config remains unchanged. */
++    const char *wcw_lanczos_env = getenv("WCW_FMV_LANCZOS");
++    if (linear && wcw_lanczos_env && wcw_lanczos_env[0] == '1' && !wcw_lanczos_env[1])
++        filt_mode = 4;
+     glViewport(lx, ly, lw, lh);
+     p_glActiveTexture(PSXGL_TEXTURE0);
+     upload_present_tex(pixels, src_w, src_h, filt_mode >= 0 ? 1 : 0);
+@@ -4430,6 +4449,15 @@
  /* Letterbox: largest num:den rect centered in the drawable. */
  static void letterbox_rect_aspect(int ww, int wh, int num, int den,
                                    int *x, int *y, int *w, int *h) {
@@ -16,7 +56,7 @@
      int dw = ww, dh = (ww * den) / num;
      if (dh > wh) { dh = wh; dw = (wh * num) / den; }
      *x = (ww - dw) / 2;
-@@ -7649,6 +7658,8 @@
+@@ -7649,6 +7677,8 @@
          }
      }
      SDL_GL_SwapWindow(s_win);
