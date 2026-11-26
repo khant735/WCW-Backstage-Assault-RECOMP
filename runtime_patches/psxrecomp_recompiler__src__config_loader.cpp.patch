@@ -1,0 +1,35 @@
+diff --git a/recompiler/src/config_loader.cpp b/recompiler/src/config_loader.cpp
+--- a/recompiler/src/config_loader.cpp
++++ b/recompiler/src/config_loader.cpp
+@@ -3011,7 +3011,22 @@
+ bool save_user_settings(const fs::path& path, const UserSettings& s) {
+     std::error_code ec;
+     if (!path.parent_path().empty())
+         fs::create_directories(path.parent_path(), ec);  // best-effort
+ 
++    // Preserve WCW extension tables when the stock launcher saves settings.
++    // Refuse to overwrite malformed existing configuration.
++    toml::table wcw_extensions;
++    try {
++        if (fs::exists(path)) {
++            const auto existing = toml::parse(path.string());
++            for (const auto& kv : existing.as_table()) {
++                if (kv.first.compare(0, 4, "wcw_") == 0 && kv.second.is_table())
++                    wcw_extensions.emplace(kv.first, kv.second);
++            }
++        }
++    } catch (...) {
++        return false;
++    }
++
+     std::ofstream f(path, std::ios::trunc);
+     if (!f.is_open()) return false;
+@@ -3210,4 +3225,8 @@
+     }
+ 
++    if (!wcw_extensions.empty()) {
++        f << "\n" << toml::format(toml::value(wcw_extensions)) << "\n";
++    }
++
+     return f.good();
+ }
