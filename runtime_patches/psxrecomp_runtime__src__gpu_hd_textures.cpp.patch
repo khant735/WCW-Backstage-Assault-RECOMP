@@ -7,10 +7,64 @@ diff --git a/runtime/src/gpu_hd_textures.cpp b/runtime/src/gpu_hd_textures.cpp
  #include <algorithm>
  #include <cstdio>
  #include <cstdlib>
-@@ -197,5 +199,24 @@
+@@ -186,3 +188,45 @@
++static uint64_t wcw_loading_ids[2] = {};
++static bool wcw_loading_trace_enabled() {
++    static const bool enabled = [] { const char* v = std::getenv("WCW_LOADING_TRACE"); return v && std::strcmp(v, "1") == 0; }();
++    return enabled;
++}
++static bool wcw_known_loading(uint64_t hash) {
++    static const uint64_t known[] = {
++        0xD218091356B841F4ULL,
++        0x9741AF1481AA71CBULL,
++        0x3C0F2575658972E0ULL,
++        0x228CE91D681BDCA8ULL,
++        0x9B49228464AA6CD8ULL,
++        0x72EB256E622D4813ULL,
++        0x7AC1F1A9413B5D5FULL,
++        0x28FBFF359079E0A3ULL,
++        0xCACB7D23549F27D7ULL,
++        0x29311BE73F2EB02AULL,
++        0x4566670BA4347E23ULL,
++        0x3C522549CBD84C9FULL,
++        0xE44C1A092069E3C3ULL,
++        0xD626CF7306577490ULL,
++        0x07AAEF38BD2360C1ULL,
++        0x43B8DBDE22335A9CULL,
++        0xB27D0BDD81CC2AE6ULL,
++        0xE6DFAA70110562CBULL,
++        0x46BE74700573246BULL,
++        0x96A0D83669B2C5DEULL,
++        0x9390F9A650C212A7ULL,
++        0x5D7D450F5B5C1C96ULL,
++        0xE835CB7241F686F1ULL,
++        0x1FE622AAD569C284ULL,
++        0x40D7E8693FFBA947ULL,
++        0xC609CA6D137DDF3DULL,
++    };
++    for (uint64_t v : known) if (v == hash) return true;
++    return false;
++}
++extern "C" uint64_t wcw_loading_framebuffer_id(int x, int y, int w, int h) {
++    if (x != 0 || (y != 0 && y != 256) || w != 512 || h != 240) return 0;
++    return wcw_loading_ids[y / 256];
++}
+ extern "C" void gpu_hd_textures_reset_tracking(void) {
++    wcw_loading_ids[0] = wcw_loading_ids[1] = 0;
+     if (!session) return;
+     hd_texture_pack_reset_tracking(session->beetle);
+@@ -191,3 +235,7 @@
+ extern "C" void gpu_hd_textures_invalidate(int x, int y, int width, int height) {
++    if (wcw_loading_trace_enabled() && width > 0 && height > 0) {
++        // Conservative: clear both on every write, including wrapped writes.
++        wcw_loading_ids[0] = wcw_loading_ids[1] = 0;
++    }
+     if (!session || width < 1 || height < 1) return;
+     if (width > 1024 || height > 512) { gpu_hd_textures_reset_tracking(); return; }
+@@ -197,5 +245,27 @@
  extern "C" void gpu_hd_textures_track_upload(int x, int y, int width, int height,
                                               const uint16_t* words) {
-+    static const bool trace = [] { const char* v = std::getenv("WCW_LOADING_TRACE"); return v && std::strcmp(v, "1") == 0; }();
++    const bool trace = wcw_loading_trace_enabled();
 +    if (trace && native_vram && words && width == 512 && height == 240) {
 +        XXH3_state_t state;
 +        XXH3_64bits_reset(&state);
@@ -23,6 +77,9 @@ diff --git a/runtime/src/gpu_hd_textures.cpp b/runtime/src/gpu_hd_textures.cpp
 +            }
 +            XXH3_64bits_update(&state, bytes, sizeof(bytes));
 +        }
++        const uint64_t hash = XXH3_64bits_digest(&state);
++        if (x == 0 && (y == 0 || y == 256))
++            wcw_loading_ids[y / 256] = wcw_known_loading(hash) ? hash : 0;
 +        if (FILE* f = std::fopen("wcw-loading-trace.csv", "a")) {
 +            std::fprintf(f, "%d,%d,%d,%d,%016llX\n", x, y, width, height,
 +                         static_cast<unsigned long long>(XXH3_64bits_digest(&state)));
