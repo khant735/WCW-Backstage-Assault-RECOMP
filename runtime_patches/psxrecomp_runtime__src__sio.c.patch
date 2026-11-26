@@ -1,0 +1,34 @@
+--- a/runtime/src/sio.c
++++ b/runtime/src/sio.c
+@@ -18,6 +18,7 @@
+ #include "debug_server.h"
+ #include "event_ring.h"
+ #include <stdlib.h>
++#include <stdio.h>
+ #include <string.h>
+ 
+ /* I_STAT is owned by memory.c */
+@@ -1270,6 +1271,23 @@
+             } else {
+                 pad_response_len = 4;
+             }
++            /* Opt-in WCW controller protocol diagnostic; no input changes. */
++            static int wcw_trace = -1;
++            static FILE *wcw_log = NULL;
++            static unsigned long long wcw_poll = 0;
++            if (wcw_trace < 0) {
++                const char *e = getenv("WCW_PAD_TRACE");
++                wcw_trace = e && strcmp(e, "1") == 0;
++                if (wcw_trace) wcw_log = fopen("wcw-pad-trace.csv", "w");
++                if (wcw_log) fputs("poll,slot,id,buttons,lx,ly,rx,ry,response_len\n", wcw_log);
++            }
++            if (wcw_log) {
++                fprintf(wcw_log, "%llu,%u,%02X,%04X,%u,%u,%u,%u,%u\n",
++                        ++wcw_poll, (unsigned)lp, (unsigned)cur_id, (unsigned)btn,
++                        (unsigned)pad_stick[lp][0], (unsigned)pad_stick[lp][1],
++                        (unsigned)pad_stick[lp][2], (unsigned)pad_stick[lp][3], (unsigned)pad_response_len);
++                if ((wcw_poll & 63u) == 0) fflush(wcw_log);
++            }
+             pad_state = PAD_SEND_RESPONSE;
+             sio_rx_data = pad_response[0];
+             sio_stat |= SIO_STAT_ACK;
