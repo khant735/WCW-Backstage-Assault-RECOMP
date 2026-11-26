@@ -29,3 +29,9 @@ CPU Movement (default ON), CPU Turning, Attacks, Grappling, Blocking, Weapon Use
 
 ## Acceptance
 Original defaults and saved settings remain compatible. Verify native menu navigation, CPU idle and resume, controller trace, each FMV category, match transitions and HUD isolation. This document is a specification, not implemented features.
+
+## Display and persistence
+Preserve F1–F12 assignments; no new hotkeys. Display Settings exposes existing resolution, aspect, fullscreen, filtering, scanlines, geometry, vsync and FPS controls. Use game.toml defaults, settings.toml overrides and existing CLI precedence. Preserve compatibility with AdvancedOptions.exe; exact standalone source not yet identified. Native menu is primary interface.
+
+## Diagnostics & Reporting
+Master switch plus independent controls for freeze dumps (psx_freeze_dump_psx-runtime_*), overlay_captures.json, psx_freeze_heartbeat.json, psx_last_run_report.json, starvation_dump.jsonl, wcw-pup-trace.csv, wcw-pad-trace.csv, wcw-pause-trace.csv, psx_cps_exit_trace.json and console logging. Store preferences in settings.toml [wcw_diagnostics]. Audit all writers; keep watchdog protection active, distinguish required overlay metadata from optional output, preserve existing files and saves. No new function keys. These are requirements, not implemented switches.
