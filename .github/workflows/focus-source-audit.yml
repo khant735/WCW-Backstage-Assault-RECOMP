@@ -26,7 +26,18 @@ jobs:
                           print(f'{n+1}: {lines[n]}')
           PY
           wc -l focus-source-audit.txt
-          head -n 180 focus-source-audit.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          for path in sorted(Path('generated').glob('SLUS_012.74_full_*.c')):
+              lines = path.read_text().splitlines()
+              for i,line in enumerate(lines):
+                  if re.search(r'/\* 0x(?:80018090|8006F430|8006EBB0|8006E960|8006E96C):',line,re.I):
+                      print(path, i+1)
+                      for s in lines[max(0,i-100):i+150]:
+                          if re.search(r'/\* 0x[0-9A-Fa-f]{8}:|goto block_|cpu->gpr\[31\] =|psx_cyc_load|cpu->write_',s):
+                              print(s.strip())
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: focus-source-audit
