@@ -1,6 +1,6 @@
 --- a/runtime/src/gpu_gl_renderer.c
 +++ b/runtime/src/gpu_gl_renderer.c
-@@ -1224,6 +1224,20 @@
+@@ -1224,11 +1224,26 @@
      "      acc += texture(u_tex, clamp((base + vec2(i, j) * st) / u_tex_size, lo, hi));\n"
      "  return acc / float(n.x * n.y);\n"
      "}\n"
@@ -20,8 +20,6 @@
 +    "}\n"
      "void main(){\n"
      "  vec2 uv = v_uv;\n"
-     "  vec4 c;\n"
-@@ -1229,6 +1243,7 @@
      "  vec4 c;\n"
      "  if (u_sharp == 2) { c = bicubic(uv); }\n"
      "  else if (u_sharp == 3) { c = area_resolve(uv); }\n"
