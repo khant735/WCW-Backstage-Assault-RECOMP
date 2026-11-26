@@ -52,9 +52,9 @@
 +#if defined(PSX_SDL3)
 +    SDL_Window *previous=SDL_GL_GetCurrentWindow();
 +    SDL_GLContext context=SDL_GL_GetCurrentContext();
-+    SDL_Window *win=SDL_CreateWindow("WCW Advanced Options - Cheats",720,600,0);
++    SDL_Window *win=SDL_CreateWindow("WCW Advanced Options - Cheats",SDL_WINDOWPOS_CENTERED,SDL_WINDOWPOS_CENTERED,720,600,0);
 +    if(!win){wcw_window_log(SDL_GetError());return;}
-+    SDL_Renderer *ren=SDL_CreateRenderer(win,"software");
++    SDL_Renderer *ren=SDL_CreateRenderer(win,"software",0);
 +    if(!ren){wcw_window_log(SDL_GetError());SDL_DestroyWindow(win);if(previous && context)SDL_GL_MakeCurrent(previous,context);return;}
 +    wcw_window_log("Cheat window opened (software renderer)");
 +    SDL_Event deferred[256]; unsigned deferred_count=0;
