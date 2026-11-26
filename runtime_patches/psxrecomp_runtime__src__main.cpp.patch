@@ -359,11 +359,7 @@
          }
      }
  
-@@ -8038,1 +8267,3 @@
-                 SDL_PumpEvents(); // retain native timing when no policy exists
-+                starvation_watchdog_heartbeat();
-+
-@@ -8132,7 +8363,7 @@
+@@ -8132,7 +8361,7 @@
                          SDL_SetRenderDrawColor(sdl_renderer, 0, 0, 0, 255);
                          SDL_RenderClear(sdl_renderer);
                          host_osd_draw_sdl(sdl_renderer);
@@ -372,7 +368,7 @@
                      }
                  }
              }
-@@ -8586,7 +8817,7 @@
+@@ -8586,7 +8815,7 @@
      {
          latency_ring_mark(LAT_SWAP_BEGIN);
          const Uint64 t0 = SDL_GetPerformanceCounter();
@@ -381,7 +377,7 @@
          const Uint64 t1 = SDL_GetPerformanceCounter();
          latency_ring_mark(LAT_SWAP_END);
          netplay_note_present();
-@@ -17371,7 +17602,17 @@
+@@ -17371,7 +17600,17 @@
       * widescreen hack); the present path letterboxes to the same aspect, so
       * the image scales to fill the larger window with no further distortion. */
      int game_w = g_video_win_w, game_h = 0;
@@ -400,7 +396,7 @@
      sdl_window = SDL_CreateWindow(
          window_title.c_str(),
          SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-@@ -17551,6 +17792,11 @@
+@@ -17551,6 +17790,11 @@
          const int tex_scale = netplay_cpu_auth_gpu() ? 1 : g_video_scale;
          g_logical_w = 480 * g_video_aspect_num * tex_scale / g_video_aspect_den;
          SDL_RenderSetLogicalSize(sdl_renderer, g_logical_w, 480 * tex_scale);
