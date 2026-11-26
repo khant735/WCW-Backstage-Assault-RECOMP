@@ -79,6 +79,35 @@ jobs:
                       print(path.name,m[1],m[2],line.strip())
           PY
           cat pad-callers.txt
+      - name: Identify indirect BIOS controller wrappers
+        run: |
+          python3 - <<'PY' > pad-wrappers.txt
+          from pathlib import Path
+          import re
+          sources = {}
+          targets = set()
+          for path in sorted(Path('generated').glob('*.c')):
+              lines = path.read_text().splitlines()
+              sources[path] = lines
+              for i,line in enumerate(lines):
+                  m = re.search(r'/\* 0x([0-9a-f]{8}): 0x240a00b0 \*/',line,re.I)
+                  if not m: continue
+                  block = '\n'.join(lines[i:i+65])
+                  if re.search(r'0x240900(?:12|13|14|15|16|5b)u?\b',block,re.I):
+                      addr = int(m[1],16)
+                      targets.add(addr)
+                      print('WRAPPER',path.name,hex(addr))
+                      print(block)
+          for path,lines in sources.items():
+              for i,line in enumerate(lines):
+                  if any(re.search(r'\b(?:0x|func_|block_)'+format(t,'08X')+r'(?:u)?\b',line,re.I) for t in targets):
+                      if re.search(r'call|dispatch|jal',line,re.I):
+                          print('CALLER',path.name,i+1)
+                          print('\n'.join(lines[max(0,i-12):i+14]))
+          print('WRAPPER COUNT',len(targets))
+          PY
+          wc -l pad-wrappers.txt
+          head -n 300 pad-wrappers.txt
       - uses: actions/upload-artifact@v4
         with:
           name: focus-source-audit
@@ -87,3 +116,4 @@ jobs:
             controller-api-audit.txt
             pad-hardware-audit.txt
             pad-callers.txt
+            pad-wrappers.txt
