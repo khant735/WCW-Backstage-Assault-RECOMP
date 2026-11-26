@@ -1,0 +1,34 @@
+diff --git a/runtime/src/gpu_hd_textures.cpp b/runtime/src/gpu_hd_textures.cpp
+--- a/runtime/src/gpu_hd_textures.cpp
++++ b/runtime/src/gpu_hd_textures.cpp
+@@ -6,3 +6,5 @@
++#define XXH_INLINE_ALL
++#include "../third_party/xxhash.h"
+ #include <algorithm>
+ #include <cstdio>
+ #include <cstdlib>
+@@ -197,5 +199,24 @@
+ extern "C" void gpu_hd_textures_track_upload(int x, int y, int width, int height,
+                                              const uint16_t* words) {
++    static const bool trace = [] { const char* v = std::getenv("WCW_LOADING_TRACE"); return v && std::strcmp(v, "1") == 0; }();
++    if (trace && native_vram && words && width == 512 && height == 240) {
++        XXH3_state_t state;
++        XXH3_64bits_reset(&state);
++        unsigned char bytes[1024];
++        for (int row = 0; row < height; ++row) {
++            for (int col = 0; col < width; ++col) {
++                const uint16_t v = native_vram[((y + row) & 511) * 1024 + ((x + col) & 1023)];
++                bytes[col * 2] = static_cast<unsigned char>(v);
++                bytes[col * 2 + 1] = static_cast<unsigned char>(v >> 8);
++            }
++            XXH3_64bits_update(&state, bytes, sizeof(bytes));
++        }
++        if (FILE* f = std::fopen("wcw-loading-trace.csv", "a")) {
++            std::fprintf(f, "%d,%d,%d,%d,%016llX\n", x, y, width, height,
++                         static_cast<unsigned long long>(XXH3_64bits_digest(&state)));
++            std::fclose(f);
++        }
++    }
+     if (!session || !native_vram || !words || width < 1 || width > 1024 || height < 1 || height > 512) return;
+     if (width == 1024 && height == 512) { gpu_hd_textures_reset_tracking(); return; }
+     /* gpu.c's A0 staging already contains post-mask words. Read the canonical
