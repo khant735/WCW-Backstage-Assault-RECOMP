@@ -41,3 +41,6 @@ Main Menu > Global Options retains original rows and adds Advanced Options as a 
 
 ## Stage 15B.103 — Priority change
 Controller movement research is on hold at Stage 15B.102. Preserve working analogue-to-D-pad compatibility and existing research. Prioritize native menu integration: first locate original Global Options menu entry/render/navigation/selection handlers, then add a separate Advanced Options entry and page using existing settings functionality. Cheats and in-match Pause Options remain separate. Do not add hotkeys or replace original menus. No native menu implementation is claimed at this checkpoint.
+
+## Advanced Options — Texture Upscaling
+Approved maximum multiplier 7.5x, minimum 1x, increments 0.5x. Preserve aspect ratio; 512x240 loading textures reach 3840x1800. Separate sampling filter from texture resampling. Proposed methods: nearest neighbour, bilinear, bicubic, Lanczos, Lanczos with adjustable sharpening, Real-ESRGAN. Investigate persistent disk cache, Vulkan NCNN backend, alpha preservation and original texture fallback. At 1x retain original texture by default. Advanced Options only, not Pause Options. Implementation pending; verify renderer limits and performance.
