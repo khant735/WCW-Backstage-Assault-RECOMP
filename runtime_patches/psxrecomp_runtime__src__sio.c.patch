@@ -1,14 +1,19 @@
 --- a/runtime/src/sio.c
 +++ b/runtime/src/sio.c
-@@ -18,6 +18,7 @@
+@@ -18,6 +18,12 @@
  #include "debug_server.h"
  #include "event_ring.h"
  #include <stdlib.h>
 +#include <stdio.h>
  #include <string.h>
  
++unsigned long long wcw_trace_poll = 0;
++unsigned wcw_trace_buttons = 0xffffu;
++unsigned wcw_trace_slot = 0;
++
++
  /* I_STAT is owned by memory.c */
-@@ -1270,6 +1271,23 @@
+@@ -1270,6 +1276,26 @@
              } else {
                  pad_response_len = 4;
              }
@@ -22,9 +27,12 @@
 +                if (wcw_trace) wcw_log = fopen("wcw-pad-trace.csv", "w");
 +                if (wcw_log) fputs("poll,slot,id,buttons,lx,ly,rx,ry,response_len\n", wcw_log);
 +            }
++            ++wcw_trace_poll;
++            wcw_trace_slot = (unsigned)lp;
++            if (lp == 0) wcw_trace_buttons = (unsigned)btn;
 +            if (wcw_log) {
 +                fprintf(wcw_log, "%llu,%u,%02X,%04X,%u,%u,%u,%u,%u\n",
-+                        ++wcw_poll, (unsigned)lp, (unsigned)cur_id, (unsigned)btn,
++                        (wcw_poll = wcw_trace_poll), (unsigned)lp, (unsigned)cur_id, (unsigned)btn,
 +                        (unsigned)pad_stick[lp][0], (unsigned)pad_stick[lp][1],
 +                        (unsigned)pad_stick[lp][2], (unsigned)pad_stick[lp][3], (unsigned)pad_response_len);
 +                if ((wcw_poll & 63u) == 0) fflush(wcw_log);
