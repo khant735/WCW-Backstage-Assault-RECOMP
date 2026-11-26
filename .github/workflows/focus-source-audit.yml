@@ -109,6 +109,20 @@ jobs:
           wc -l pad-wrappers.txt
           grep -E '^(WRAPPER|CALLER)' pad-wrappers.txt
           sed -n '/^CALLER/,$p' pad-wrappers.txt | head -n 450
+      - name: Extract full initialization routines
+        run: |
+          python3 - <<'PY' > pad-init-routines.txt
+          from pathlib import Path
+          import re
+          p = Path('generated/SLUS_012.74_full_28.c')
+          lines = p.read_text().splitlines()
+          for i in range(4100,5200):
+              s = lines[i]
+              if re.search(r'Address:|^void |^block_|cpu->gpr\[|CPS jal|return;|goto ',s):
+                  if 'PGXP_' not in s or '0x' in s:
+                      print(i+1,s.strip())
+          PY
+          cat pad-init-routines.txt
       - uses: actions/upload-artifact@v4
         with:
           name: focus-source-audit
@@ -118,3 +132,4 @@ jobs:
             pad-hardware-audit.txt
             pad-callers.txt
             pad-wrappers.txt
+            pad-init-routines.txt
