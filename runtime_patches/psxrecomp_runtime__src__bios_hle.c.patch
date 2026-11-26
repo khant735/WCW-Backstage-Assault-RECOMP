@@ -1,0 +1,35 @@
+--- a/runtime/src/bios_hle.c
++++ b/runtime/src/bios_hle.c
+@@ -38,6 +38,8 @@
+ #include "psx_cycles.h"
+ 
+ #include <stddef.h>
++#include <stdio.h>
++#include <stdlib.h>
+ 
+ /* fntrace.c — game-entry handoff latch (drives the boot turbo window). */
+ extern int fntrace_is_game_started(void);
+@@ -310,6 +312,17 @@
+ {
+     if (phys == 0xB0u) {
+         uint32_t fn = cpu->gpr[9]; /* $t1 — the PSY-Q thunk's function number */
++        const char *trace = getenv("WCW_PAD_BIOS_TRACE");
++        if (trace && trace[0] == '1' && !trace[1] &&
++            ((fn >= 0x12u && fn <= 0x16u) || fn == 0x5bu)) {
++            FILE *f = fopen("wcw-pad-bios-trace.csv", "a");
++            if (f) {
++                fprintf(f, "%02X,%08X,%08X,%08X,%08X,%08X\n",
++                        (unsigned)fn, (unsigned)cpu->gpr[4], (unsigned)cpu->gpr[5],
++                        (unsigned)cpu->gpr[6], (unsigned)cpu->gpr[7], (unsigned)cpu->gpr[31]);
++                fclose(f);
++            }
++        }
+         int handled = s_call_hle_on ? hle_service_b0(cpu, fn) : 0;
+         hle_record(0xB0u, fn, cpu, handled ? cpu->gpr[2] : 0u,
+                    handled ? PSX_HLE_ROUTE_HLE : PSX_HLE_ROUTE_LLE);
+@@ -348,3 +361,4 @@
+     g_psx_bios_hle_hook =
+-        (s_call_hle_on || s_boot_skip_on) ? &bios_hle_dispatch : NULL;
++        (s_call_hle_on || s_boot_skip_on || getenv("WCW_PAD_BIOS_TRACE"))
++            ? &bios_hle_dispatch : NULL;
+ }
