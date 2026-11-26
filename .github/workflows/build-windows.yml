@@ -100,6 +100,11 @@ jobs:
             }
             Write-Host "PUP entry $addr sites=$hits"
           }
+      - name: Install pause candidate trace
+        shell: pwsh
+        run: |
+          python tools/install_pause_trace.py
+          if ($LASTEXITCODE -ne 0) { throw 'Pause trace instrumentation failed' }
       - name: Compile
         shell: pwsh
         run: ./build-windows.ps1
@@ -120,6 +125,14 @@ jobs:
           call Launch.cmd
           >>wcw-pup-trace.csv echo LAUNCH_EXIT_%ERRORLEVEL%
           '@ | Set-Content dist/Launch_PUP_Trace.cmd -Encoding ascii
+          @'
+          @echo off
+          cd /d "%~dp0"
+          set "WCW_PAUSE_TRACE=1"
+          set "WCW_PAD_TRACE=1"
+          >wcw-pause-trace.csv echo PC,value
+          call Launch.cmd
+          '@ | Set-Content dist/Launch_Pause_Trace.cmd -Encoding ascii
           if (Test-Path build-release/bios) { Copy-Item build-release/bios dist/bios -Recurse }
           if (Test-Path build-release/assets) { Copy-Item build-release/assets dist/assets -Recurse }
           Compress-Archive -Path dist/* -DestinationPath WCW-Windows-x64.zip
