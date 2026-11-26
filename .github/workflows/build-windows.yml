@@ -74,10 +74,32 @@ jobs:
               FILE *f=fopen("wcw-pup-trace.csv","a"); if (!f) return;
               fprintf(f,"80071C48,%08X,%08X,%u,%08X,%08X,%08X,%u,%u,%s\n",(unsigned)dst,(unsigned)src,(unsigned)n,(unsigned)cpu->gpr[19],(unsigned)cpu->gpr[20],(unsigned)cpu->gpr[2],w,h,reason); fclose(f);
           }
+          static void wcw_pup_entry(CPUState *cpu, unsigned pc) {
+              const char *enabled=getenv("WCW_PUP_TRACE");
+              if (!enabled || strcmp(enabled,"1")) return;
+              FILE *f=fopen("wcw-pup-trace.csv","a"); if (!f) return;
+              fprintf(f,"%08X,%08X,%08X,%u,%08X,%08X,%08X,0,0,ENTRY_ARGS_A0_A1_A2\n",pc,(unsigned)cpu->gpr[4],(unsigned)cpu->gpr[5],(unsigned)cpu->gpr[6],(unsigned)cpu->gpr[19],(unsigned)cpu->gpr[20],(unsigned)cpu->gpr[2]); fclose(f);
+          }
           #endif
           '@ | Set-Content generated/wcw_pup_trace.h -Encoding ascii
           $s = $s.Replace($inc,($inc + "`n" + '#include "wcw_pup_trace.h"')).Replace($site,('    wcw_pup_trace(cpu);' + "`n" + $site))
           [IO.File]::WriteAllText((Resolve-Path $p),$s)
+          $targets = @('80065AE0','80066BE0','80071B00','80071B98','80070F00')
+          foreach ($addr in $targets) {
+            $hits = 0
+            foreach ($file in Get-ChildItem generated/SLUS_012.74_full_*.c) {
+              $body = [IO.File]::ReadAllText($file.FullName)
+              $pattern = '(?im)^([ \t]*(?:L_|label_)?'+$addr+':[ \t]*)(?=\r?$)'
+              $matches = [regex]::Matches($body,$pattern)
+              if ($matches.Count -eq 0) { continue }
+              if (!$body.Contains('#include "wcw_pup_trace.h"')) { $body = $body.Replace($inc,($inc + "`n" + '#include "wcw_pup_trace.h"')) }
+              if (!$body.Contains('#include "wcw_pup_trace.h"')) { throw "Missing include in $file" }
+              $body = [regex]::Replace($body,$pattern,('$1' + "`n" + '    wcw_pup_entry(cpu,0x'+$addr+'u);'))
+              [IO.File]::WriteAllText($file.FullName,$body)
+              $hits += $matches.Count
+            }
+            Write-Host "PUP entry $addr sites=$hits"
+          }
       - name: Compile
         shell: pwsh
         run: ./build-windows.ps1
@@ -96,6 +118,7 @@ jobs:
           >wcw-pup-trace.csv echo PC,destination,source,size,S3,S4,V0,width,height,result
           >>wcw-pup-trace.csv echo STARTUP_LAUNCHER
           call Launch.cmd
+          >>wcw-pup-trace.csv echo LAUNCH_EXIT_%ERRORLEVEL%
           '@ | Set-Content dist/Launch_PUP_Trace.cmd -Encoding ascii
           if (Test-Path build-release/bios) { Copy-Item build-release/bios dist/bios -Recurse }
           if (Test-Path build-release/assets) { Copy-Item build-release/assets dist/assets -Recurse }
