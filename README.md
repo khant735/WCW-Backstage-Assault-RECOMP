@@ -44,15 +44,73 @@ Reference sheets for planned static texture enhancements, not screenshots of com
 
 The original character-selection portraits are extracted from `FE_MAIN.BIG/portrait.psh`. The PNG filename prefix denotes the extraction sequence; the suffix denotes the portrait resource identifier.
 
-| Original PNG | Confirmed description |
-| --- | --- |
-| `008_15.png` | Eric Bischoff |
-| `010_17.png` | Goldberg |
-| `053_LOCF.png` | Locked Female Superstar |
-| `054_LOCM.png` | Locked Male Superstar |
+Full portrait filename cross-reference (61 textures). Wrestler names are candidate assignments based on internal IDs unless marked user-confirmed; screenshot numbering and resource IDs should not be treated as interchangeable.
 
-The `LOCF` and `LOCM` graphics are displayed until the corresponding superstar is unlocked, at which point the individual character portrait replaces the placeholder. Other wrestler-to-portrait assignments remain under investigation.
+| Original PNG | Description | Status |
+| --- | --- | --- |
+| `000_WIRE.png` | Wireframe placeholder | Provisional |
+| `001_9.png` | David Flair | Provisional |
+| `002_1.png` | Bam Bam Bigelow | Provisional |
+| `003_10.png` | Diamond Dallas Page | Provisional |
+| `004_11.png` | Disco Inferno | Provisional |
+| `005_12.png` | Don Harris | Provisional |
+| `006_13.png` | Doug Dellinger | Provisional |
+| `007_14.png` | Elizabeth | Provisional |
+| `008_15.png` | Eric Bischoff | User-confirmed |
+| `009_16.png` | Evan Karagias | Provisional |
+| `010_17.png` | Goldberg | User-confirmed |
+| `011_18.png` | Hulk Hogan | Provisional |
+| `012_19.png` | Jeff Jarrett | Provisional |
+| `013_20.png` | Jimmy Hart | Provisional |
+| `014_21.png` | Johnny the Bull | Provisional |
+| `015_22.png` | Kanyon | Provisional |
+| `016_23.png` | Kevin Nash | Provisional |
+| `017_24.png` | Billy Kidman | Provisional |
+| `018_25.png` | Kimberly | Provisional |
+| `019_26.png` | Konnan | Provisional |
+| `020_27.png` | La Parka | Provisional |
+| `021_28.png` | Brian Adams | Provisional |
+| `022_29.png` | Cpl. Cajun | Provisional |
+| `023_3.png` | Big Vito | Provisional |
+| `024_30.png` | Lex Luger | Provisional |
+| `025_31.png` | Madusa | Provisional |
+| `026_32.png` | Mike Awesome | Provisional |
+| `027_33.png` | Mona | Provisional |
+| `028_34.png` | Ms. Hancock | Provisional |
+| `029_35.png` | Norman Smiley | Provisional |
+| `030_36.png` | Brian Clark | Provisional |
+| `031_37.png` | Rey Mysterio Jr. | Provisional |
+| `032_38.png` | Ric Flair | Provisional |
+| `033_39.png` | Ron Harris | Provisional |
+| `034_40.png` | Scott Hall | Provisional |
+| `035_41.png` | Scott Steiner | Provisional |
+| `036_42.png` | Sarge | Provisional |
+| `037_43.png` | Shane Douglas | Provisional |
+| `038_45.png` | Shannon Moore | Provisional |
+| `039_44.png` | Shane Helms | Provisional |
+| `040_46.png` | Sid Vicious | Provisional |
+| `041_47.png` | Stevie Ray | Provisional |
+| `042_48.png` | Sting | Provisional |
+| `043_49.png` | Tank Abbott | Provisional |
+| `044_5.png` | Bret Hart | Provisional |
+| `045_50.png` | The Wall | Provisional |
+| `046_51.png` | Torrie Wilson | Provisional |
+| `047_52.png` | Vampiro | Provisional |
+| `048_53.png` | Vince Russo | Provisional |
+| `049_6.png` | Buff Bagwell | Provisional |
+| `050_7.png` | Chris Candido | Provisional |
+| `051_8.png` | Crowbar | Provisional |
+| `052_0.png` | Asya | Provisional |
+| `053_LOCF.png` | Locked Female Superstar | User-confirmed |
+| `054_LOCM.png` | Locked Male Superstar | User-confirmed |
+| `055_4.png` | Booker T | Provisional |
+| `056_58.png` | Major Gunns | Provisional |
+| `057_54.png` | Daffney | Provisional |
+| `058_56.png` | Lance Storm | Provisional |
+| `059_57.png` | Lt. Loco | Provisional |
+| `060_55.png` | General Rection | Provisional |
 
+The `LOCF` and `LOCM` graphics are displayed until the corresponding superstar is unlocked, at which point the individual character portrait replaces the placeholder.
 
 **Main menu background components**
 
