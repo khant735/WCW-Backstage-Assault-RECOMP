@@ -42,6 +42,18 @@ Reference sheets for planned static texture enhancements, not screenshots of com
 
 ![Wrestler portraits](download%20%2817%29.png)
 
+The original character-selection portraits are extracted from `FE_MAIN.BIG/portrait.psh`. The PNG filename prefix denotes the extraction sequence; the suffix denotes the portrait resource identifier.
+
+| Original PNG | Confirmed description |
+| --- | --- |
+| `008_15.png` | Eric Bischoff |
+| `010_17.png` | Goldberg |
+| `053_LOCF.png` | Locked Female Superstar |
+| `054_LOCM.png` | Locked Male Superstar |
+
+The `LOCF` and `LOCM` graphics are displayed until the corresponding superstar is unlocked, at which point the individual character portrait replaces the placeholder. Other wrestler-to-portrait assignments remain under investigation.
+
+
 **Main menu background components**
 
 ![Menu background components](WCW_menu_backgrounds.png)
