@@ -167,6 +167,74 @@ The `LOCF` and `LOCM` graphics are displayed until the corresponding superstar i
 
 See [ROADMAP.md](docs/ROADMAP.md): actual extended widescreen visibility and 17:9/21:9 testing, automatic game camera plus right-analogue manual control, improved video/MDEC playback and block smoothing, HDD file-backed virtual CD reads with timing preserved, advanced options integrated in game, additional diagnostics and regression testing.
 
+## Proposed expansion — WCW Mayhem crossover roster
+
+Future research only; not implemented. Combine the 1999 and 2000 PlayStation rosters while preserving the original Backstage Assault roster and saves. References: [WCW Mayhem RECOMP](https://github.com/dotGrx/WCW-Mayhem-RECOMP) (technical reference, no original game data included) and [Mayhem roster reference](https://www.wcwsite.com/video-games/wcw-mayhem). The following is a planning inventory, not a verified extraction of Mayhem's internal roster.
+
+### Candidate additions
+
+- Randy Savage, Rick Steiner, Ernest Miller, Curt Hennig, Barry Windham, Bobby Duncum Jr., Kenny Kaos, Bobby Eaton, Bobby Blaze, Horace Hogan, Scott Norton.
+- Arn Anderson, Chris Benoit, Dean Malenko, Steve McMichael, Eddie Guerrero, Juventud Guerrera, Chris Jericho, Psychosis, Chavo Guerrero Jr., Alex Wright, Kaz Hayashi, Lash LeRoux, Lizmark Jr., Prince Iaukea, Raven, Perry Saturn, Mean Gene Okerlund, Sonny Onoo.
+- Alternate personas: Wolfpac Sting and Wrath (already represented as Sting and Brian Clark respectively).
+- Further Mayhem availability checks: Vincent, Kendall Windham, Scotty Riggs, Meng, The Barbarian, Steven Regal, Lenny Lane, Lodi. Do not assume these are all present until checked against the disc.
+
+The initial 31-entry candidate inventory would yield up to 89 named/alternate entries plus six custom slots (95 total), or 87 distinct named individuals if the two alternate personas are counted only once. This is a provisional planning estimate, not a verified final roster size.
+
+### Factions and historical lineups
+
+| Group | Combined-roster opportunity |
+| --- | --- |
+| The Radicalz (WWF) | Benoit, Guerrero, Malenko, Saturn |
+| The Revolution | Shane Douglas, Asya, Benoit, Malenko, Saturn |
+| Filthy Animals | Konnan, Rey Mysterio Jr., Kidman, Guerrero, Juventud, Torrie Wilson, Disco Inferno; Tygress needs separate assets |
+| nWo Wolfpac | Nash, Savage, Sting, Luger, Konnan; Hennig for early lineup; Rick Rude needs separate assets |
+| nWo Hollywood | Hogan, Hall, Steiner, Bischoff, Bagwell, Norton, Stevie Ray, Horace, Adams, Hennig, Elizabeth; Vincent to verify; The Giant, Rude, The Disciple and other historical members need separate assets |
+| nWo B-Team | Stevie Ray, Norton, Adams, Horace, Vincent (verify Vincent) |
+| nWo Elite | Hogan, Nash, Hall, Steiner, Luger, Bagwell, Elizabeth; historical variants |
+| nWo 2000 | Bret Hart, Jarrett, Nash, Hall, Steiner, Ron and Don Harris (already available) |
+| Original nWo | Founders already available; add historical members where available; The Giant, Syxx, Ted DiBiase, nWo Sting and others require separate research |
+| Four Horsemen | Ric Flair, Benoit, Malenko, McMichael and Arn Anderson (manager; period-specific lineups) |
+| West Texas Rednecks | Hennig, Barry Windham, Duncum Jr.; Kendall Windham to verify |
+| Jersey Triad | DDP, Bigelow, Kanyon (already available) |
+| Raven's Flock | Raven, Saturn, Kidman; additional members such as Sick Boy and Reese need separate research |
+| Dungeon of Doom / Millionaire's Club / First Family | Partial historical lineups; additional members and assets required |
+
+### Tag teams
+
+| Team | Members / requirements |
+| --- | --- |
+| Outsiders | Hall and Nash |
+| Harlem Heat | Booker T and Stevie Ray |
+| Steiner Brothers | Rick and Scott Steiner |
+| American Males | Bagwell and Scotty Riggs (verify Riggs) |
+| Faces of Fear | Meng and The Barbarian (verify both) |
+| Blue Bloods | Steven Regal and Bobby Eaton (verify Regal) |
+| Dancing Fools | Alex Wright and Disco Inferno |
+| West Hollywood Blondes | Lenny Lane and Lodi (verify both) |
+| Windham Brothers | Barry and Kendall (verify Kendall) |
+| Enforcers | Arn Anderson and Larry Zbyszko (additional assets for Larry) |
+| Fire and Ice | Scott Norton and Ice Train (additional assets for Ice Train) |
+| KroniK | Brian Adams and Bryan Clark |
+| Mamalukes | Big Vito and Johnny the Bull |
+| Harris Brothers | Ron and Don Harris |
+| Insiders | Nash and DDP |
+| Impact Players | Lance Storm and Justin Credible (additional assets for Justin) |
+| Thrillseekers | Lance Storm and Chris Jericho |
+| Jersey Triad pairings | DDP, Kanyon and Bigelow |
+| Hollywood Blonds | Steve Austin and Brian Pillman (separate assets required) |
+
+### Alternate attire and presentation
+
+Explore period-specific WCW, WWF and ECW personas: Hollywood Hogan, Razor Ramon (Hall), Diesel (Nash), Crush (Adams), Adam Bomb/Wrath (Clark), Y2J (Jericho), Latino Heat (Guerrero), Wolfpac Sting, Hitman Bret Hart, and period variants of Raven, Saturn and Lance Storm. Alex Wright (Das Wunderkind/Berlyn) is distinct from Paul Wight (The Giant/Big Show). Consider faction logos, black/white, red/black and silver/black nWo attire, portraits, entrance graphics, music and FMVs where legally available. Alternate attire should not consume new wrestler IDs unnecessarily.
+
+### Engineering and compatibility research
+
+- Compare original Mayhem and Backstage Assault archive formats, wrestler records, resource codes, portraits, model meshes, textures, skeletons, animations, move sets, audio and FMVs. Check actual file names and formats rather than assuming compatibility.
+- Audit the existing 64-record roster limit, selection grids, ID widths, unlock bitfields, AI, collision, move assignments, faction/tag-team selection and save serialization before expanding.
+- Preserve original IDs, six custom slots and existing memory-card compatibility; consider an opt-in extended roster and versioned save format.
+- Prototype one imported character first, verify rendering, animation, gameplay and unlock behavior, then expand incrementally. Test missing resources and fallback paths.
+- Use locally extracted assets from the user's own legally obtained discs; do not distribute original Mayhem game data. Mayhem's repository excludes its generated game code and disc assets, so binary-level compatibility is not established.
+
 ## Legal / distribution
 
 This fan research project is not affiliated with Sony, WCW, WWE, Kodiak Interactive, or original rights holders. No PlayStation game disc, BIN/CUE or licensed BIOS is distributed here. Selected original graphics reference sheets are included for research; rights remain with their respective owners. The generated C source is derived from analysis of the game executable and may be subject to the game's original copyright; public redistribution requires an independent rights assessment. No licence is asserted over third-party game content. PSXRecomp and its runtime are subject to **PolyForm Noncommercial 1.0.0**. SDL3 and OpenBIOS have their respective licences. The upstream [WCW-Mayhem-RECOMP](https://github.com/dotGrx/WCW-Mayhem-RECOMP) project is credited as a technical reference; this repository does not imply its authors endorse this port.
