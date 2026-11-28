@@ -110,6 +110,11 @@ jobs:
         run: |
           python tools/install_costume_trace.py
           if ($LASTEXITCODE -ne 0) { throw 'Costume trace instrumentation failed' }
+      - name: Install CAW model trace
+        shell: pwsh
+        run: |
+          python tools/install_caw_trace.py
+          if ($LASTEXITCODE -ne 0) { throw "CAW trace installation failed" }
       - name: Compile
         shell: pwsh
         run: ./build-windows.ps1
