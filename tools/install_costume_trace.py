@@ -22,9 +22,9 @@ static void wcw_costume_trace(CPUState *cpu, unsigned pc) {
     if(pc==0x800E9180u) {
         number=(int)cpu->gpr[16];
         if(cpu->read_byte) {
-            unsigned addr=cpu->gpr[29]+16u;
+            unsigned addr=cpu->gpr[4];
             unsigned phys=addr&0x1fffffffu;
-            if(phys<=0x1fffe0u) for(unsigned i=0;i<31;i++) {
+            if(phys<=0x7fffe0u) for(unsigned i=0;i<31;i++) {
                 unsigned c=cpu->read_byte(addr+i);
                 if(!c) break;
                 if(c<32 || c>126 || c==',' || c=='"') { filename[0]=0; break; }
