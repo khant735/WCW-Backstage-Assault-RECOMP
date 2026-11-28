@@ -105,6 +105,11 @@ jobs:
         run: |
           python tools/install_pause_trace.py
           if ($LASTEXITCODE -ne 0) { throw 'Pause trace instrumentation failed' }
+      - name: Install costume loader trace
+        shell: pwsh
+        run: |
+          python tools/install_costume_trace.py
+          if ($LASTEXITCODE -ne 0) { throw 'Costume trace instrumentation failed' }
       - name: Compile
         shell: pwsh
         run: ./build-windows.ps1
