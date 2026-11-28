@@ -1,0 +1,65 @@
+save_database_index,name,internal_id_candidate,runtime_index_candidate,attire_0_expected,attire_1_expected,attire_2_expected,attire_3_expected,unlock_offset_candidate,unlock_mask_candidate,association_evidence
+0,ASYA,0,0,costu000.big,costu001.big,costu002.big,costu003.big,0x280,0x1,candidate
+1,MIKE AWESOME,32,1,costu010.big,costu011.big,costu012.big,costu013.big,0x280,0x2,previous_trace_report
+2,BAM BAM BIGELOW,1,2,costu020.big,costu021.big,costu022.big,costu023.big,0x280,0x4,candidate
+3,BIG VITO,3,3,costu030.big,costu031.big,costu032.big,costu033.big,0x280,0x8,candidate
+4,BOOKER T.,4,4,costu040.big,costu041.big,costu042.big,costu043.big,0x280,0x10,candidate
+5,BRET HART,5,5,costu050.big,costu051.big,costu052.big,costu053.big,0x280,0x20,candidate
+6,BRIAN ADAMS,28,6,costu060.big,costu061.big,costu062.big,costu063.big,0x280,0x40,candidate
+7,BRYAN CLARK,36,7,costu070.big,costu071.big,costu072.big,costu073.big,0x280,0x80,candidate
+8,BUFF BAGWELL,6,8,costu080.big,costu081.big,costu082.big,costu083.big,0x281,0x1,previous_trace_report
+9,CHRIS CANDIDO,7,9,costu090.big,costu091.big,costu092.big,costu093.big,0x281,0x2,candidate
+10,CPL. CAJUN,29,10,costu100.big,costu101.big,costu102.big,costu103.big,0x281,0x4,candidate
+11,CROWBAR,8,11,costu110.big,costu111.big,costu112.big,costu113.big,0x281,0x8,candidate
+12,CUSTOM A,59,12,costu120.big,costu121.big,costu122.big,costu123.big,0x281,0x10,candidate
+13,CUSTOM B,60,13,costu130.big,costu131.big,costu132.big,costu133.big,0x281,0x20,candidate
+14,CUSTOM C,61,14,costu140.big,costu141.big,costu142.big,costu143.big,0x281,0x40,candidate
+15,CUSTOM D,62,15,costu150.big,costu151.big,costu152.big,costu153.big,0x281,0x80,candidate
+16,CUSTOM E,63,16,costu160.big,costu161.big,costu162.big,costu163.big,0x282,0x1,candidate
+17,CUSTOM F,2,17,costu170.big,costu171.big,costu172.big,costu173.big,0x282,0x2,candidate
+18,DAFFNEY,54,18,costu180.big,costu181.big,costu182.big,costu183.big,0x282,0x4,candidate
+19,DAVID FLAIR,9,19,costu190.big,costu191.big,costu192.big,costu193.big,0x282,0x8,candidate
+20,DDP,10,20,costu200.big,costu201.big,costu202.big,costu203.big,0x282,0x10,previous_trace_report
+21,DOUG DELLINGER,13,21,costu210.big,costu211.big,costu212.big,costu213.big,0x282,0x20,candidate
+22,DISCO INFERNO,11,22,costu220.big,costu221.big,costu222.big,costu223.big,0x282,0x40,candidate
+23,DON HARRIS,12,23,costu230.big,costu231.big,costu232.big,costu233.big,0x282,0x80,candidate
+24,ELIZABETH,14,24,costu240.big,costu241.big,costu242.big,costu243.big,0x283,0x1,candidate
+25,ERIC BISCHOFF,15,25,costu250.big,costu251.big,costu252.big,costu253.big,0x283,0x2,candidate
+26,EVAN KARAGIAS,16,26,costu260.big,costu261.big,costu262.big,costu263.big,0x283,0x4,candidate
+27,GENERAL RECTION,55,27,costu270.big,costu271.big,costu272.big,costu273.big,0x283,0x8,candidate
+28,GOLDBERG,17,28,costu280.big,costu281.big,costu282.big,costu283.big,0x283,0x10,candidate
+29,HULK HOGAN,18,29,costu290.big,costu291.big,costu292.big,costu293.big,0x283,0x20,candidate
+30,JEFF JARRETT,19,30,costu300.big,costu301.big,costu302.big,costu303.big,0x283,0x40,previous_trace_report
+31,JIMMY HART,20,31,costu310.big,costu311.big,costu312.big,costu313.big,0x283,0x80,candidate
+32,JOHNNY THE BULL,21,32,costu320.big,costu321.big,costu322.big,costu323.big,0x284,0x1,candidate
+33,KANYON,22,33,costu330.big,costu331.big,costu332.big,costu333.big,0x284,0x2,candidate
+34,KEVIN NASH,23,34,costu340.big,costu341.big,costu342.big,costu343.big,0x284,0x4,candidate
+35,BILLY KIDMAN,24,35,costu350.big,costu351.big,costu352.big,costu353.big,0x284,0x8,previous_trace_report
+36,KIMBERLY,25,36,costu360.big,costu361.big,costu362.big,costu363.big,0x284,0x10,candidate
+37,KONNAN,26,37,costu370.big,costu371.big,costu372.big,costu373.big,0x284,0x20,candidate
+38,LA PARKA,27,38,costu380.big,costu381.big,costu382.big,costu383.big,0x284,0x40,candidate
+39,LANCE STORM,56,39,costu390.big,costu391.big,costu392.big,costu393.big,0x284,0x80,previous_trace_report
+40,TOTAL PACKAGE,30,40,costu400.big,costu401.big,costu402.big,costu403.big,0x285,0x1,candidate
+41,LT. LOCO,57,41,costu410.big,costu411.big,costu412.big,costu413.big,0x285,0x2,candidate
+42,MADUSA,31,42,costu420.big,costu421.big,costu422.big,costu423.big,0x285,0x4,previous_trace_report
+43,MAJOR GUNNS,58,43,costu430.big,costu431.big,costu432.big,costu433.big,0x285,0x8,candidate
+44,MONA,33,44,costu440.big,costu441.big,costu442.big,costu443.big,0x285,0x10,candidate
+45,MS. HANCOCK,34,45,costu450.big,costu451.big,costu452.big,costu453.big,0x285,0x20,candidate
+46,NORMAN SMILEY,35,46,costu460.big,costu461.big,costu462.big,costu463.big,0x285,0x40,candidate
+47,REY MYSTERIO JR.,37,47,costu470.big,costu471.big,costu472.big,costu473.big,0x285,0x80,candidate
+48,RIC FLAIR,38,48,costu480.big,costu481.big,costu482.big,costu483.big,0x286,0x1,candidate
+49,RON HARRIS,39,49,costu490.big,costu491.big,costu492.big,costu493.big,0x286,0x2,candidate
+50,SARGE,42,50,costu500.big,costu501.big,costu502.big,costu503.big,0x286,0x4,candidate
+51,SCOTT HALL,40,51,costu510.big,costu511.big,costu512.big,costu513.big,0x286,0x8,candidate
+52,SCOTT STEINER,41,52,costu520.big,costu521.big,costu522.big,costu523.big,0x286,0x10,candidate
+53,THE FRANCHISE,43,53,costu530.big,costu531.big,costu532.big,costu533.big,0x286,0x20,previous_trace_report
+54,SHANE HELMS,44,54,costu540.big,costu541.big,costu542.big,costu543.big,0x286,0x40,candidate
+55,SHANNON MOORE,45,55,costu550.big,costu551.big,costu552.big,costu553.big,0x286,0x80,candidate
+56,SID VICIOUS,46,56,costu560.big,costu561.big,costu562.big,costu563.big,0x287,0x1,candidate
+57,STEVIE RAY,47,57,costu570.big,costu571.big,costu572.big,costu573.big,0x287,0x2,candidate
+58,STING,48,58,costu580.big,costu581.big,costu582.big,costu583.big,0x287,0x4,previous_trace_report
+59,TANK ABBOTT,49,59,costu590.big,costu591.big,costu592.big,costu593.big,0x287,0x8,candidate
+60,AWOL,50,60,costu600.big,costu601.big,costu602.big,costu603.big,0x287,0x10,candidate
+61,TORRIE WILSON,51,61,costu610.big,costu611.big,costu612.big,costu613.big,0x287,0x20,previous_trace_report
+62,VAMPIRO,52,62,costu620.big,costu621.big,costu622.big,costu623.big,0x287,0x40,previous_trace_report
+63,VINCE RUSSO,53,63,costu630.big,costu631.big,costu632.big,costu633.big,0x287,0x80,candidate
